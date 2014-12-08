@@ -1,0 +1,25 @@
+{
+  "name": "flipper",
+  "version": "0.1.0",
+  "authors": [
+    "Herman Lee <threeday0905@gmail.com>"
+  ],
+  "description": "Web-component solutions",
+  "main": "build/index.js",
+  "keywords": [
+    "web-components"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jQuery": "~2.1.1",
+    "xtemplate": "~3.7.1"
+  }
+}
