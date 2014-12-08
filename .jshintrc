@@ -68,7 +68,8 @@
   "globals": {
     "console"    : false,
 
-    "KISSY"      : false,
+    "Flipper"    : false,
+    "XTemplate"  : false,
     "define"     : false,
     "require"    : false,
     "module"     : false,
