@@ -1,0 +1,9 @@
+{
+    "flipper": "./flipper", //"string" means concat files within directory in order
+    "vendor/jquery": [
+        "../bower_components/jQuery/dist/jquery.js"
+    ],
+    "vendor/xtemplate": [
+        "../bower_components/xtemplate/build/xtemplate-standalone.js"
+    ]
+}
