@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Digo - Dashboard Demo</title>
+
+        <meta charset="utf-8">
+        <meta content="IE=edge" http-equiv="X-UA-Compatible">
+        <meta content="width=device-width, initial-scale=1" name="viewport" >
+
+        <link rel="shortcut icon" href="./favicon.ico" type="image/x-icon">
+
+        <!-- include flipper.js, jquery & bootstrap, (or angular) -->
+        <link rel="import" href="./resource/core.html">
+
+        <!-- include necessary components -->
+        <link rel="import" href="./components/dynamic/test-1/index.html">
+        <link rel="import" href="./components/dynamic/test-2/index.html">
+    </head>
+    <body>
+        <test-1 id="reflector" data-url="/demo/components/dynamic/test-1/mock.json"></test-1>
+        <hr>
+        <test-2 id="controller"></test-2>
+
+        <script>
+            (function() {
+                'use strict';
+                $('#controller').on('select-button', function(ev, param1) {
+                    console.log(param1);
+                });
+            }());
+        </script>
+    </body>
+</html>

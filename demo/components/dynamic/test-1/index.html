@@ -1,0 +1,16 @@
+<web-component name="test-1" render-mode="xtpl">
+    <template>
+        <h1>This is test component 1. Current filter is "{{data.filters.row}}" </h1>
+    </template>
+    <script>
+    'use strict';
+        Flipper.register({
+            requireData: function() {
+                return Flipper.fetch({
+                    url: '/demo/components/dynamic/test-1/mock.json',
+                    dataType: 'json'
+                });
+            }
+        });
+    </script>
+</web-component>

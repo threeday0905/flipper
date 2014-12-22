@@ -1,0 +1,23 @@
+<web-component name="test-2">
+    <template>
+        <h1>This is test component 2, change the filter below: </h1>
+        <fieldset>
+            <legend>Controller</legend>
+            <button data-axis="x1">X1</button>
+            <button data-axis="x2">X2</button>
+            <button data-axis="x3">X3</button>
+        </fieldset>
+    </template>
+    <script>
+    'use strict';
+
+        Flipper.register({
+            createdCallback: function() {
+                var buttons = Flipper.findShadow(this, 'button');
+                $(buttons).on('click', function() {
+                    window.alert( $(this).data('axis') );
+                });
+            }
+        });
+    </script>
+</web-component>
