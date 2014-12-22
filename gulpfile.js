@@ -63,4 +63,4 @@ buildTasks.forEach(function(task) {
 });
 
 gulp.task('build', buildTasks.buildQueue);
-gulp.task('default', buildTasks.watchQueue);
+gulp.task('default', [ 'build' ].concat(buildTasks.watchQueue));
