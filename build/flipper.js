@@ -1,314 +1,261 @@
-window.Flipper = {
-    version: '0.1.0'
-};
-
 (function() {
-    'use strcit';
+    'use strict';
 
-    var currentScriptDescriptor = {
-        get: function() {
-            var script = HTMLImports.currentScript || document.currentScript ||
-                // NOTE: only works when called in synchronously executing code.
-                // readyState should check if `loading` but IE10 is
-                // interactive when scripts run so we cheat.
-                (document.readyState !== 'complete' ?
-                    document.scripts[document.scripts.length - 1] : null);
-            return script;
-        },
-        configurable: true
+    var Flipper = {
+        version: '0.1.0'
     };
 
-    Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+    var renderMethods = {
+        normal: function(template) {
+            return template;
+        },
+        xtpl: function(template, data) {
+            var xtpl = new XTemplate(template);
+            return xtpl.render(data);
+        }
+    };
 
+    Flipper.getRender = function(mode) {
+        return renderMethods[mode];
+    };
+
+    /*jshint -W024 */
+    Flipper.import = function(components, folder) {
+        folder = folder || '../src';
+
+        function add(name) {
+            var link = document.createElement('link');
+            link.rel = 'import';
+            link.href = folder + name + '/index.html';
+            document.head.appendChild(link);
+        }
+
+        components.split(',').map(function(val) {
+            return val.trim();
+        }).forEach(add);
+    };
+
+    Flipper.findShadow = function(target, selector) {
+        return target.shadowRoot.querySelectorAll(selector);
+    };
+
+    Flipper.fetch = $.ajax;
+
+    window.Flipper = Flipper;
 }());
 
 (function(Flipper) {
     'use strict';
 
-    var utils = Flipper.utils = {};
+    var FLOW_APIS = [ 'createdCallback', 'attachedCallback', 'detachedCallback' ];
 
-    utils.eachNodes = function(nodes, callback) {
-        if (!nodes || !nodes.length) { return; }
-
-        var node;
-        for (var i = 0, len = nodes.length; i < len; i += 1) {
-            node = nodes[i];
-            callback(node, i);
-        }
-    };
-
-
-    utils.mix = function(to, from) {
-        Object.getOwnPropertyNames(from).forEach(function(name) {
-            Object.defineProperty(to, name,
-                Object.getOwnPropertyDescriptor(from, name));
-        });
-    };
-} (Flipper));
-
-(function(Flipper) {
-    'use strict';
-
-    var config = {
-        tagName: 'web-component'
-    };
-
-    Flipper._config = config;
-} (Flipper));
-
-(function(Flipper) {
-    'use strict';
-
-    function parseScript() { }
-
-    Flipper.parser = Flipper.parser || {};
-    Flipper.parser.parseScript = parseScript;
-} (Flipper));
-
-(function(Flipper) {
-    'use strict';
-
-    var utils = Flipper.utils;
-
-    function importRuleForSheet(sheet, baseUrl) {
-        var href = new URL(sheet.getAttribute('href'), baseUrl).href;
-        return '@import \'' + href + '\';';
-    }
-
-    function createStyleElement(cssText, scope) {
-        scope = scope || document;
-        scope = scope.createElement ? scope : scope.ownerDocument;
-        var style = scope.createElement('style');
-        style.textContent = cssText;
-        return style;
-    }
-
-    function copySheetAttributes(style, link) {
-        var attrs = link.attributes,
-            attr;
-        for (var i = 0, len = attrs.length; i < len; i += 1) {
-            attr = attrs[i];
-
-            if (attr.name !== 'rel' && attr.name !== 'href') {
-                style.setAttribute(attr.name, attr.value);
-            }
-        }
-    }
-
-    function extractStyleElement(ele) {
-        var styles = ele.find('style'),
-            content = ele.getTplContent();
-
-        utils.eachNodes(styles, function(style) {
-            content.appendChild(style);
-        });
-    }
-
-    function importStyleSheet(ele) {
-        var stylesheets = ele.find('link[rel="stylesheets]'),
-            content = ele.getTplContent(),
-            owner   = ele.getOwner(),
-            baseURI = owner.baseURI;
-
-        utils.eachNodes(stylesheets, function(node) {
-            var rule  = importRuleForSheet(node, baseURI),
-                style = createStyleElement(rule, owner);
-
-            copySheetAttributes(style, node);
-
-            node.parentNode.removeChild(node);
-            content.appendChild(style);
-        });
-    }
-
-    function parseStyle(ele) {
-        extractStyleElement(ele);
-        importStyleSheet(ele);
-    }
-
-    Flipper.parser = Flipper.parser || {};
-    Flipper.parser.parseStyle = parseStyle;
-} (Flipper));
-
-(function(Flipper) {
-    'use strict';
-    var utils = Flipper.utils;
-
-    var render = {
-        xtpl: function(facotry) {
-            var tplText = facotry.getTplHTML(),
-                module = new XTemplate(tplText);
-
-            return function(data, commands) {
-                commands = utils.mix(commands || {}, {
-                    $scope: function(scope) {
-                        return JSON.stringify(scope.getData());
-                    }
-                });
-
-                return module.render(data, {
-                    commands: commands
-                });
+    function registerElement(component) {
+        function wrapCallback(name) {
+            return function() {
+                component[name].call(component, this);
             };
         }
-    };
-
-    Flipper.render = render;
-} (Flipper));
-
-(function(Flipper) {
-    'use strict';
-
-    var utils = Flipper.utils,
-        elements = {};
-
-    function tryGetNameFromCurrentScript() {
-        var script = document._currentScript,
-            element = script && script.parentNode;
-
-        return element && element.getAttribute ? element.getAttribute('name') : '';
-    }
-
-    function renderShadow(element, html) {
-        var root = element.createShadowRoot();
-        root.innerHTML = html;
-    }
-
-    function register(name, prototype) {
-        if (typeof name !== 'string') {
-            prototype = name;
-            name = tryGetNameFromCurrentScript();
-        }
-
-        if (!name) {
-            throw new Error('Element name could not be inferred.');
-        }
-
-        if (!elements[name].waitingRegister) {
-            throw new Error('Already registered prototype for element ' + name);
-        }
-
-        var element = elements[name];
-        element.waitingRegister = false;
-
-        var fetchData = prototype && prototype.fetchData,
-            overwriteRender  = prototype && prototype.render;
-
         var eleProto = Object.create(HTMLElement.prototype, {
-            getData: {
-                value: function() {
-                    return this.data;
-                }
-            },
             createdCallback: {
-                value: function() {
-                    var self = this;
-
-                    function render(data) {
-                        self.data = data;
-                        var html = overwriteRender ? overwriteRender.call(self, data) : element.render(data);
-                        renderShadow(self, html);
-                    }
-
-                    if (this.getAttribute('scope')) {
-                        var data = JSON.parse(this.getAttribute('scope'));
-                        render(data);
-                        this.removeAttribute('scope');
-
-                    } else if (typeof fetchData === 'function') {
-                        fetchData().then(function(data) {
-                            render(data);
-                        });
-                    } else {
-                        render({});
-                    }
-                }
+                value: wrapCallback('createdCallback')
+            },
+            attachedCallback: {
+                value: wrapCallback('attachedCallback')
+            },
+            detachedCallback: {
+                value: wrapCallback('detachedCallback')
             }
         });
 
-        document.registerElement(name, {
+        document.registerElement(component.name, {
             prototype: eleProto
         });
     }
 
-    Flipper.elements  = elements;
-    Flipper.register = register;
-}(Flipper));
+    function Component(name) {
+        this.name       = name;
+        this.domMode    = 'shadow';
+        this.renderMode = 'normal';
 
-(function(Flipper) {
-    'use strict';
-    var config = Flipper._config,
-        utils  = Flipper.utils,
-        render = Flipper.render,
-        parser = Flipper.parser,
-        elements = Flipper.elements;
+        this.templates = {};
+        this.styles    = [];
 
-    var factoryProto = Object.create(HTMLElement.prototype);
-    utils.mix(factoryProto, {
-        find: function(selector) {
-            return this.querySelectorAll(selector);
+        this.dataQueue = [];
+
+        this.lifeCycleCallback = {};
+        FLOW_APIS.forEach(function(apiName) {
+            this.lifeCycleCallback[apiName] = [];
+        }, this);
+
+        registerElement(this);
+        Component.add(name, this);
+    }
+
+    Component.prototype = {
+        updateDomMode: function(value) {
+            /* available value: light | dom */
+            this.domMode = value;
         },
-        getName: function() {
-            return this.getAttribute('name');
+        updateRenderMode: function(value) {
+            /* default value: 'normal', can extend by flipper plugin, like 'xtpl' */
+            this.renderMode = value;
         },
-        getTemplate: function() {
-            return this.querySelector('template');
+        addDataQueue: function(desc) {
+            this.dataQueue.push(desc);
         },
-        getTplContent: function() {
-            var tpl = this.getTemplate();
-            return tpl ? tpl.content : '';
+        addLifeCycleCallback: function(name, value) {
+            if (this.lifeCycleCallback[name] && typeof value === 'function') {
+                this.lifeCycleCallback[name].push(value);
+            }
         },
-        getTplHTML: function() {
-            var tpl = this.getTemplate();
-            return tpl ? tpl.innerHTML : '';
+        addTemplate: function(template, name) {
+            name = name || this.name;
+
+            if (typeof template !== 'string') {
+                template = String(template);
+            }
+
+            this.templates[name] = template;
         },
-        getOwner: function() {
-            return this.ownerDocument;
+        addStyle: function(style) {
+            this.styles.push(style);
+        },
+        fetchData: function() {
+            var fetchEvent = this.dataQueue[0],
+                result = typeof fetchEvent === 'function' ?
+                    fetchEvent() : fetchEvent,
+                promise;
+
+            if (result && typeof result.then === 'function') {
+                promise = result;
+            } else {
+                promise = new Promise(function(resolve) {
+                    resolve(result);
+                });
+            }
+
+            return promise;
+        },
+        renderHTML: function(data) {
+            var renderMethod = Flipper.getRender(this.renderMode),
+                template = this.templates[this.name],
+                html = renderMethod(template, data);
+
+            return html;
+        },
+        createdCallback: function(element) {
+            var self = this;
+
+            this.fetchData()
+                .then(function(data) {
+                    return self.renderHTML(data);
+                })
+                .then(function(html) {
+                    var targetEle = self.domMode === 'shadow' ?
+                        element.createShadowRoot() :
+                        element;
+
+                    targetEle.innerHTML = html;
+
+                    self.lifeCycleCallback.createdCallback.forEach(function(fn) {
+                        fn.call(element);
+                    });
+                });
+        },
+        attachedCallback: function(element) {
+            this.lifeCycleCallback.attachedCallback.forEach(function(fn) {
+                fn.call(element);
+            });
+        },
+        detachedCallback: function(element) {
+            this.lifeCycleCallback.detachedCallback.forEach(function(fn) {
+                fn.call(element);
+            });
         }
-    });
-
-    utils.mix(factoryProto, {
-        createdCallback: function() {
-            var name = this.getName();
-            parser.parseStyle(this);
-
-            //console.log('init ' + name);
-            elements[name] = {
-                waitingRegister: true,
-                render: render.xtpl(this)
-            };
-        }
-    });
-
-    document.registerElement(config.tagName, {
-        prototype: factoryProto
-    });
-}(Flipper));
-
-(function(Flipper) {
-    'use strict';
-
-    var componentFolder = '../component/';
-
-    Flipper.find = function(selector) {
-        var content = document.querySelector('link[rel="import"]').import;
-        return content.querySelector(selector);
     };
 
-    Flipper.import = function(href) {
-        function add(name) {
-            var link = document.createElement('link');
-            link.rel = 'import';
-            link.href = componentFolder + name + '/index.html';
-            document.head.appendChild(link);
+    Component.elements = {};
+    Component.add = function(name, component) {
+        if (component instanceof Component) {
+            Component.elements[name] = component;
+        }
+    };
+
+    Component.register = function(name, options) {
+        options = options || {};
+
+        var component = Component.elements[name];
+
+        if (!component) {
+            component = new Component(name);
         }
 
-        href.split(',').map(function(val) {
-            return val.trim();
-        }).forEach(add);
+        if (options.template) {
+            component.addTemplate(options.template);
+        }
+
+        if (typeof options.templates === 'object') {
+            Object.keys(options.templates).forEach(function(key) {
+                component.addTemplate(options.templates[key], key);
+            });
+        }
+
+        if (options.domMode) {
+            component.updateDomMode(options.domMode);
+        }
+
+        if (options.renderMode) {
+            component.updateRenderMode(options.renderMode);
+        }
+
+        if (options.requireData) {
+            component.addDataQueue(options.requireData);
+        }
+
+        FLOW_APIS.forEach(function(apiName) {
+            var callback = options[apiName],
+                addCallback = component.addLifeCycleCallback.bind(component, apiName);
+
+            if (typeof callback === 'function') {
+                addCallback(callback);
+            } else if (Array.isArray(callback)) {
+                callback.forEach(addCallback);
+            }
+        });
     };
 
-    Flipper.get = function(url) {
-        return $.getJSON(url);
+    /* create method */
+    Flipper.register = function(name, options) {
+        if (arguments.length < 2) {
+            options = arguments[0] || {};
+            name = (function() {
+                var script = document.__currentScript || document.currentScript;
+                return script.parentNode.getAttribute('name') || '';
+            }());
+        }
+        Component.register(name, options);
     };
-} (Flipper));
+
+    document.registerElement('web-component', {
+        prototype: Object.create(HTMLElement.prototype, {
+            createdCallback: {
+                value: function() {
+                    var $component = $(this);
+                    var component = new Component($component.attr('name'));
+                    $(this).find(' > template').each(function() {
+                        var $this = $(this);
+                        component.addTemplate($this.html(), $this.attr('id'));
+                    });
+
+                    if ($component.attr('dom-mode')) {
+                        component.updateDomMode($component.attr('dom-mode'));
+                    }
+
+                    if ($component.attr('render-mode')) {
+                        component.updateRenderMode($component.attr('render-mode'));
+                    }
+                }
+            }
+        })
+    });
+} (Flipper) );
