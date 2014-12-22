@@ -4,6 +4,6 @@
         "../bower_components/jQuery/dist/jquery.js"
     ],
     "vendor/xtemplate": [
-        "../bower_components/xtemplate/build/xtemplate-standalone.js"
+        "../bower_components/xtemplate/build/xtemplate-standalone-debug.js"
     ]
 }
