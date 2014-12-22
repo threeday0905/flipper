@@ -1,13 +1,22 @@
 <web-component name="test-1" render-mode="xtpl">
     <template>
-        <h1>This is test component 1. Current filter is "{{data.filters.row}}" </h1>
+        <h1>This is test component 1. Current filter is "<strong>{{data.filters.row}}</strong>" </h1>
+        <section>
+            <h2>Report Data: </h2>
+            <ul>
+                {{#each (data.report)}}
+                    <li>{{this}}</li>
+                {{/each}}
+            </ul>
+        </section>
     </template>
     <script>
     'use strict';
         Flipper.register({
             requireData: function() {
+                /* its reference to $.ajax */
                 return Flipper.fetch({
-                    url: '/demo/components/dynamic/test-1/mock.json',
+                    url: this.getAttribute('data-uri'),
                     dataType: 'json'
                 });
             }

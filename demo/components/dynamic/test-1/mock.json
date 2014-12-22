@@ -1,6 +1,6 @@
 {
     "data": {
-        "list":   [ "a", "b", "c" ],
+        "report":   [ "a", "b", "c" ],
         "filters": {
             "row": "default"
         }

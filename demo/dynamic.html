@@ -17,17 +17,15 @@
         <link rel="import" href="./components/dynamic/test-2/index.html">
     </head>
     <body>
-        <test-1 id="reflector" data-url="/demo/components/dynamic/test-1/mock.json"></test-1>
+        <test-1 id="reflector" data-uri="/demo/components/dynamic/test-1/mock.json"></test-1>
         <hr>
         <test-2 id="controller"></test-2>
 
         <script>
-            (function() {
-                'use strict';
-                $('#controller').on('select-button', function(ev, param1) {
-                    console.log(param1);
-                });
-            }());
+        'use strict';
+            $('#controller').on('select-button', function(ev, param1) {
+                $(document.querySelectorAll('#reflector /deep/ h1 strong')).html(param1);
+            });
         </script>
     </body>
 </html>
