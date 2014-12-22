@@ -1,5 +1,10 @@
 {
-    "flipper": "./flipper", //"string" means concat files within directory in order
+    //"flipper": "./flipper_legacy", //"string" means concat files within directory in order
+    "flipper": [
+        "./flipper/polyfill.js",
+        "./flipper/flipper.js",
+        "./flipper/component.js"
+    ],
     "vendor/jquery": [
         "../bower_components/jQuery/dist/jquery.js"
     ],
