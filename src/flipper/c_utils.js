@@ -12,4 +12,12 @@
             callback(node, i);
         }
     };
+
+
+    utils.mix = function(to, from) {
+        Object.getOwnPropertyNames(from).forEach(function(name) {
+            Object.defineProperty(to, name,
+                Object.getOwnPropertyDescriptor(from, name));
+        });
+    };
 } (Flipper));

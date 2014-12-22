@@ -21,9 +21,7 @@
         }).forEach(add);
     };
 
-    Flipper.fetch = function(url) {
-        $.getJSON(url).then(function(data) {
-            console.log(data);
-        });
+    Flipper.get = function(url) {
+        return $.getJSON(url);
     };
 } (Flipper));
