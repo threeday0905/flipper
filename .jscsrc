@@ -11,6 +11,8 @@
     "requireBlocksOnNewline":               1,
     "disallowPaddingNewlinesInBlocks":      true,
 
+    "requireLineFeedAtFileEnd": false,
+
     "requireMultipleVarDecl": null,
 
     "safeContextKeyword": ["that", "self"],
