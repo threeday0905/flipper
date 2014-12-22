@@ -120,10 +120,10 @@
         addStyle: function(style) {
             this.styles.push(style);
         },
-        fetchData: function() {
+        fetchData: function(element) {
             var fetchEvent = this.dataQueue[0],
                 result = typeof fetchEvent === 'function' ?
-                    fetchEvent() : fetchEvent,
+                    fetchEvent.call(element) : fetchEvent,
                 promise;
 
             if (result && typeof result.then === 'function') {
@@ -146,9 +146,9 @@
         createdCallback: function(element) {
             var self = this;
 
-            this.fetchData()
+            this.fetchData(element)
                 .then(function(data) {
-                    return self.renderHTML(data);
+                    return self.renderHTML(data, element);
                 })
                 .then(function(html) {
                     var targetEle = self.domMode === 'shadow' ?
