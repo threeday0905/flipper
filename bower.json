@@ -21,6 +21,8 @@
   "dependencies": {
     "jquery": "~2.1.1",
     "xtemplate": "~3.7.1",
-    "modulex": "~1.7.4"
+    "modulex": "~1.7.4",
+    "args-expect": "~0.2.2",
+    "polymer": "~0.5.2"
   }
 }
