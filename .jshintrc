@@ -19,7 +19,7 @@
   "plusplus"      : true,
   "undef"         : true,
   "unused"        : true,
-  "strict"        : true,
+  "strict"        : false,
   "trailing"      : true,
 
   "asi"           : false,
@@ -69,6 +69,9 @@
     "console"    : false,
 
     "Flipper"    : false,
+    "Component"  : false,
+    "util"       : false,
+
     "XTemplate"  : false,
     "define"     : false,
     "require"    : false,
