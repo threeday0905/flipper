@@ -1,10 +1,3 @@
-(function() {
-'use strict';
-
-var Flipper = {
-    version: '0.1.0'
-};
-
 /*
     TODO Polyfills:
     - all es5 feature (Object.keys, Array.isArray, Object.create, etc.)
@@ -12,28 +5,6 @@ var Flipper = {
     - Promise
     - web components
  */
-
-var utils = {};
-
-utils.format = function(pattern) {
-    var i = 0;
-    pattern.replace(/%s/, function() {
-        i = i + 1;
-        return arguments[i] || '';
-    });
-};
-
-utils.log = function() {
-    var msg = utils.apply(utils, arguments);
-    if (typeof console.log === 'function') {
-        console.log(msg);
-    }
-};
-
-utils.error = function() {
-    var msg = utils.apply(utils, arguments);
-    throw new Error(msg);
-};
 
 var renderMethods = {
     normal: function(template) {
@@ -71,7 +42,12 @@ Flipper.findShadow = function(target, selector) {
 
 Flipper.fetch = $.ajax;
 
-var FLOW_APIS = ['createdCallback', 'attachedCallback', 'detachedCallback'];
+var FLOW_APIS = [
+    'initializedCallback',
+    'createdCallback',
+    'attachedCallback',
+    'detachedCallback'
+];
 
 function registerElement(component) {
     function wrapCallback(name) {
@@ -96,11 +72,18 @@ function registerElement(component) {
     });
 }
 
-function Component(name, options) {
-    this.name = name;
-    this.status = 'unresolved';
+var COMPONENT_STATUS = {
+    ERROR: -1,
+    WAITING: 0,
+    INITIALIZING: 1,
+    READY: 2
+};
 
-    this.domMode = 'shadow';
+function Component(name) {
+    this.name   = name;
+    this.status = COMPONENT_STATUS.WAITING;
+
+    this.domMode    = 'shadow';
     this.renderMode = 'normal';
 
     this.templates = {};
@@ -108,24 +91,41 @@ function Component(name, options) {
 
     this.dataQueue = [];
 
-    this.lifeCycleCallback = {
-        createdCallback: [],
-        attachedCallback: [],
-        detachedCallback: []
-    };
-
-    this.setup(options);
-    registerElement(this);
-    Component.add(name, this);
+    this.lifeCycleCallback = {};
+    FLOW_APIS.forEach(function(key) {
+        this.lifeCycleCallback[key] = [];
+    }, this);
 }
 
 Component.prototype = {
-    setup: function(options) {
-        var name = this.name;
+    isReady: function() {
+        return this.status === COMPONENT_STATUS.READY;
+    },
+    initialize: function(options) {
+        this.setup(options);
 
-        if (this.status === 'ready') {
-            throw new Error(
-                util.format('should not re-setup registered component %s', name));
+        var componentReady = function() {
+                this.status = COMPONENT_STATUS.READY;
+                registerElement(this);
+            }.bind(this),
+            customizeInit = this.customizeInit,
+            customizeInitResult;
+
+        if (!customizeInit) {
+            componentReady();
+        } else {
+            customizeInitResult = customizeInit();
+            if (util.isPromise(customizeInitResult)) {
+                customizeInitResult.then(componentReady);
+            } else {
+                componentReady();
+            }
+        }
+    },
+    setup: function(options) {
+        if (this.isReady()) {
+            throw new Error(util.format(
+                'should not re-setup registered component ' + this.name));
         }
 
         if (typeof options !== 'object') {
@@ -246,59 +246,3 @@ Component.prototype = {
         });
     }
 };
-
-Component.elements = {};
-Component.add = function(name, component) {
-    if (component instanceof Component) {
-        Component.elements[name] = component;
-    }
-};
-
-/* create method */
-Flipper.register = function(name, options) {
-    if (arguments.length < 2) {
-        options = arguments[0] || {};
-        name = (function() {
-            var script = document.__currentScript || document.currentScript;
-            return script.parentNode.getAttribute('name') || '';
-        }());
-    }
-
-    var component = Component.elements[name];
-
-    if (!component) {
-        component = new Component(name, options);
-    } else {
-        component.setup(options);
-    }
-};
-
-document.registerElement('web-component', {
-    prototype: Object.create(HTMLElement.prototype, {
-        createdCallback: {
-            value: function() {
-                var $component = $(this),
-                    templates = {},
-                    name,  options;
-
-                $component.find(' > template').map(function() {
-                    var $tpl = $(this);
-                    templates[ $tpl.attr('id') || '' ] = $tpl.html();
-                });
-
-                name = $component.attr('name');
-                options = {
-                    templates:  templates,
-                    domMode:    $component.attr('dom-mode'),
-                    renderMode: $component.attr('render-mode')
-                };
-
-                Flipper.register(name, options);
-            }
-        }
-    })
-});
-
-
-window.Flipper = Flipper;
-} () );

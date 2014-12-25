@@ -3,9 +3,10 @@
     "flipper": [
         "./flipper/intro.snippet",
         "./flipper/polyfill.js",
-        "./flipper/utils.js",
+        "./flipper/util.js",
         "./flipper/flipper.js",
         "./flipper/component.js",
+        "./flipper/register.js",
         "./flipper/outro.snippet",
     ],
     "vendor/jquery": [

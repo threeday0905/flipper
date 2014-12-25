@@ -6,7 +6,7 @@ var fs      = require('fs'),
     perrier = require('perrier'),
     concat  = require('gulp-concat');
 
-var srcFolder = path.resolve(__dirname, './src'),
+var srcFolder  = path.resolve(__dirname, './src'),
     destFolder = path.resolve(__dirname, './build'),
     buildTasks;
 

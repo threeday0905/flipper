@@ -8,6 +8,10 @@ utils.format = function(pattern) {
     });
 };
 
+utils.isPromise = function(obj) {
+    return obj && typeof obj.then === 'function';
+};
+
 utils.log = function() {
     var msg = utils.apply(utils, arguments);
     if (typeof console.log === 'function') {
