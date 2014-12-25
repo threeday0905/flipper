@@ -22,7 +22,6 @@
         <test-2 id="controller"></test-2>
 
         <script>
-        'use strict';
             $('#controller').on('select-button', function(ev, param1) {
                 $(document.querySelectorAll('#reflector /deep/ h1 strong')).html(param1);
             });
