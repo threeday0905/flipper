@@ -1,0 +1,8 @@
+{
+    "data": {
+        "report":   [ "a", "b", "c" ],
+        "filters": {
+            "row": "default"
+        }
+    }
+}

@@ -1,0 +1,20 @@
+.digo-widget.rich-table { margin: 20px; }
+.digo-widget.rich-table .header { background-color: #eee; height: 40px; line-height: 40px; border: 1px solid #ddd; border-bottom: none; }
+.digo-widget.rich-table .body .col-sm-12 { padding: 0; }
+.digo-widget.rich-table .filter { float: left; margin-right: 20px; }
+.digo-widget.rich-table .tool { float: right; margin-right: 20px; position: relative; }
+.digo-widget.rich-table .tool .merge { cursor: pointer; }
+.digo-widget.rich-table .target_dim { border: 1px solid #aaa; position: absolute; z-index: 999; background-color: white; margin-top: -7px; width: 200px; }
+.digo-widget.rich-table .target_dim p { margin: 5px; height: 20px; line-height: 20px; }
+.digo-widget.rich-table .target_dim ul { list-style: none; padding: 5px; }
+.digo-widget.rich-table .target_dim ul li { height: 20px; line-height: 20px; }
+.digo-widget.rich-table table { border-left: none !important; border-right: none !important; margin-bottom: 0px; margin-top: -1px; }
+.digo-widget.rich-table th { background-color: #eee; text-align: center; cursor: pointer; }
+.digo-widget.rich-table td { vertical-align: middle; }
+.digo-widget.rich-table .paginator-block { background-color: #eee; height: 40px; line-height: 40px; border: 1px solid #ddd; border-top: none; }
+.digo-widget.rich-table .paginator { float: right; }
+.digo-widget.rich-table .paginator .previous { float: left; margin-right: 10px; cursor: pointer; }
+.digo-widget.rich-table .paginator .next { float: left; margin-right: 10px; cursor: pointer; }
+.digo-widget.rich-table .paginator .page { float: left; margin-left: 5px; margin-right: 5px; padding-left: 3px; padding-right: 3px; height: 20px; line-height: 20px; margin-top: 10px; cursor: pointer; }
+.digo-widget.rich-table .paginator .current { color: white; background: #E88300; border: 1px solid #AA5F03;  padding-left: 3px; padding-right: 3px; }
+.digo-widget.rich-table .paginator .sum { float: left; }

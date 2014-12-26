@@ -1,0 +1,25 @@
+<web-component name="test-1" render-mode="xtpl">
+    <template>
+        <h1>This is test component 1. Current filter is "<strong>{{data.filters.row}}</strong>" </h1>
+        <section>
+            <h2>Report Data: </h2>
+            <ul>
+                {{#each (data.report)}}
+                    <li>{{this}}</li>
+                {{/each}}
+            </ul>
+        </section>
+    </template>
+    <script>
+    'use strict';
+        Flipper.register({
+            requireData: function() {
+                /* its reference to $.ajax */
+                return Flipper.fetch({
+                    url: this.getAttribute('data-uri'),
+                    dataType: 'json'
+                });
+            }
+        });
+    </script>
+</web-component>
