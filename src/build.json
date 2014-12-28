@@ -11,16 +11,36 @@
         "./flipper/exports.js",
         "./temp/outro.snippet"
     ],
-    "vendor/jquery.js": [
+    "vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
     ],
-    "vendor/bootstrap.css": [
-        "./temp/boostrap.css"
+    "vendor/css/bootstrap.css": [
+        "../bower_components/bootstrap/dist/css/bootstrap.css"
     ],
-    "vendor/bootstrap.js": [
+    "vendor/css/bootstrap.css.map": [
+
+        "../bower_components/bootstrap/dist/css/bootstrap.css.map"
+    ],
+    "vendor/js/bootstrap.js": [
         "../bower_components/bootstrap/dist/js/bootstrap.js"
     ],
-    "vendor/xtemplate.js": [
+    "vendor/css/bootstrap-shadow.css": [
+        "./temp/boostrap-shadow.css"
+    ],
+    "vendor/fonts/glyphicons-halflings-regular.eot": [
+        "../bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.eot"
+    ],
+    "vendor/fonts/glyphicons-halflings-regular.svg": [
+        "../bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.svg"
+    ],
+    "vendor/fonts/glyphicons-halflings-regular.ttf": [
+        "../bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.ttf"
+    ],
+    "vendor/fonts/glyphicons-halflings-regular.woff": [
+        "../bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.woff"
+    ],
+
+    "vendor/js/xtemplate.js": [
         "../bower_components/xtemplate/build/xtemplate-standalone-debug.js"
     ]
 }
