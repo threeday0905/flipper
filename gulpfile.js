@@ -16,7 +16,7 @@ buildTasks = (function() {
         );
 
     return Object.keys(buildConfig).map(function(taskName) {
-        var destFile = taskName + '.js',
+        var destFile = taskName,
             buildSource = buildConfig[taskName],
             srcFiles;
 
@@ -32,6 +32,12 @@ buildTasks = (function() {
                 return path.resolve(srcFolder, fileName);
             });
         }
+
+        srcFiles.forEach(function(file) {
+            if (!fs.existsSync(file)) {
+                throw new Error('the file ' + file + ' is not exists');
+            }
+        });
 
         return {
             name: taskName,

@@ -1,41 +1,48 @@
 var components = {};
 
-function attachConfig(name, options) {
-    /* if the component is not exists, then create it */
-    var component = components[name];
-
-    if (!component) {
-        components[name] = component = new Component(name);
-    }
-
-    if (component.isReady()) {
-        throw new Error('component ' + name + ' is ready, should not be updated');
-    }
-
-    component.initialize(options);
-}
-
-function createComponent(name, options, needToWait) {
+function createComponent(name, elementProto, needToWait) {
     if (components[name]) {
         throw new Error('component ' + name + ' is already registered');
     }
 
     var component = components[name] = new Component(name);
 
+    component.prepare(elementProto);
+
     if (!needToWait) {
-        component.initialize(options);
+        component.initialize();
     } else {
-        component.setup(options);
+        var timer = setTimeout(function() {
+            console.log('component ' + name + ' is initializing automatically, forgot noscript attribute? ');
+            component.initialize();
+        }, 1000);
+        component.on('initialized', function() {
+            clearTimeout(timer);
+        });
     }
+
+    return component;
+}
+
+function initializeComponent(name, options) {
+    /* if the component is not exists, then create it */
+    var component = components[name];
+
+    if (!component) {
+        components = createComponent(name, options, true);
+    }
+
+    /* it will throw error, if already initialized */
+    component.initialize(options);
 }
 
 /**
  * use to register new component,
  *     or attach config to exist component which defined from tag
  */
-Flipper.register = function(name, options) {
+Flipper.register = function(name, elementProto) {
     if (typeof name === 'object') {
-        options = name || {};
+        elementProto = name || {};
         name = (function() {
             var script = document.__currentScript || document.currentScript,
                 parentNode = script && script.parentNode;
@@ -47,31 +54,35 @@ Flipper.register = function(name, options) {
         throw new Error('component name could not be inferred.');
     }
 
-    attachConfig(name, options);
+    console.log('register ' + name);
+    /* initialize created component, or create it */
+    initializeComponent(name, elementProto);
 };
 
 document.registerElement('web-component', {
     prototype: Object.create(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
+
                 var $component = $(this),
-                    templates  = {},
-                    name,  options, needToWait = true;
+                    name, options, views  = {},
+                    needToWait = true;
 
                 $component.find(' > template').map(function() {
                     var $tpl = $(this);
-                    templates[ $tpl.attr('id') || '' ] = $tpl.html();
+                    views[ $tpl.attr('id') || '' ] = $tpl.html();
                 });
 
-                name = $component.attr('name');
+                name = this.getAttribute('name');
+
                 options = {
-                    templates:  templates,
-                    domMode:    $component.attr('dom-mode'),
-                    renderMode: $component.attr('render-mode')
+                    views:     views,
+                    presenter: this.getAttribute('presenter'),
+                    renderer:  this.getAttribute('renderer')
                 };
 
-                needToWait = $component.not('[no-script]');
-
+                needToWait = !this.hasAttribute('noscript');
+                console.log('created ' + name);
                 createComponent(name, options, needToWait);
             }
         }

@@ -67,11 +67,7 @@
 
   "globals": {
     "console"    : false,
-
     "Flipper"    : false,
-    "Component"  : false,
-    "util"       : false,
-
     "XTemplate"  : false,
     "define"     : false,
     "require"    : false,

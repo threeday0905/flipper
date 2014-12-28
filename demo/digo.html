@@ -4,19 +4,19 @@
 <meta charset="utf-8" />
 <title>组件使用示例</title>
 
-<link href="bootstrap-3.3.1/css/bootstrap.min.css" rel="stylesheet">
-<link href="plugin/richtable/index.css" rel="stylesheet">
+<link href="../bower_components/bootstrap/dist/css/bootstrap.css" rel="stylesheet">
+<link href="./components/zys/richtable/index.css" rel="stylesheet">
 <script src="http://g.alicdn.com/kissy/k/1.4.7/seed.js" data-config="{combine:false}"></script>
-<script src="js/jquery-2.1.3.min.js"></script>
-<script src="js/angular-1.2.8.js"></script>
-<script src="echarts-2.1.10/build/dist/echarts-all.js"></script>
+<script src="../bower_components/jquery/dist/jquery.js"></script>
+<script src="../bower_components/angular/angular.js"></script>
+<script src="../bower_components/echarts/build/dist/echarts-all.js"></script>
 <script type="text/javascript">
   KISSY.config({
     packages: {
-      "plugin": {base: './', charset: 'utf-8', tag: ''}
+      "zys": {base: './components', charset: 'utf-8', tag: ''}
     }
   });
-  KISSY.use('plugin/richtable/index.js', function(S, RichTable){
+  KISSY.use('zys/richtable/index.js', function(S, RichTable){
 
     //标题
     var title = '数据分析';

@@ -1,0 +1,23 @@
+<web-component name="layout-nav" renderer="xtpl">
+    <template>
+        <nav>
+            <ul>
+                {{#each (items) }}
+                    <li>
+                        <a href="#">{{this}}</a>
+                    </li>
+                {{/each}}
+            </ul>
+        </nav>
+    </template>
+    <script>
+        (function() {
+            var defaultDataUri = document.currentScript.ownerDocument.baseURI + '/../mock.json';
+            Flipper.register({
+                fetch: function() {
+                    return $.get(this.getAttribute('data-uri') || defaultDataUri);
+                }
+            });
+        }());
+    </script>
+</web-component>

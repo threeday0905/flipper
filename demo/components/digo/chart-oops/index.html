@@ -1,0 +1,46 @@
+<web-component name="chart-oops" renderer="xtpl">
+    <style>
+        h1 {
+            color: blue;
+        }
+    </style>
+
+    <template>
+        <h1>{{data.header}}</h1>
+        <ul>
+            {{#each (data.data) }}
+                <li>{{config.start}}{{config.end}} {{this}}</li>
+            {{/each}}
+        </ul>
+    </template>
+
+    <script>
+        Flipper.register({
+            handleConfig: function(config) {
+                config.start += '* _ *';
+                return config;
+            },
+            initialize: function(rptCode, config) {
+                var dataUri = this.getAttribute('data-uri'),
+                    model = this.model;
+
+                model.config = this.handleConfig(config);
+
+                console.log('fetch data with rpt code: ' + rptCode);
+
+                return $.get(dataUri, {
+                    rptCode: rptCode
+                }).then(function(data) {
+                    model.data = data;
+                });
+            },
+            ready: function() {
+                var self = this;
+                $(Flipper.findShadow(this, 'ul > li')).on('click', function() {
+                    var html = $(this).html();
+                    $(self).trigger('select-item', html);
+                });
+            }
+        });
+    </script>
+</web-component>

@@ -1,0 +1,3 @@
+var Flipper = {
+    version: '@@VERSION@@'
+};
