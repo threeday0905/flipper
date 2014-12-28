@@ -1,17 +1,21 @@
 <web-component name="chart-oops" renderer="xtpl">
     <style>
-        h1 {
+        h1.header {
             color: blue;
         }
     </style>
 
     <template>
-        <h1>{{data.header}}</h1>
+        <h1 class="header">{{data.header}}</h1>
         <ul>
             {{#each (data.data) }}
                 <li>{{config.start}}{{config.end}} {{this}}</li>
             {{/each}}
         </ul>
+    </template>
+
+    <template id="tpl-abc">
+        qqqqq
     </template>
 
     <script>

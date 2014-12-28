@@ -1,46 +1,59 @@
 <!doctype html>
 <html>
-    <head>
-        <title>Digo - Dashboard Demo</title>
 
-        <meta charset="utf-8">
-        <meta content="IE=edge" http-equiv="X-UA-Compatible">
-        <meta content="width=device-width, initial-scale=1" name="viewport" >
+<head>
+    <title>Digo - Dashboard Demo</title>
 
-        <!-- include flipper.js, jquery & bootstrap, (or angular) -->
-        <link rel="import" href="./resource/core.html">
+    <meta charset="utf-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
 
-        <!-- include necessary components -->
-        <link rel="import" href="./components/digo/chart-oops/index.html">
-        <link rel="import" href="./components/digo/layout-nav/index.html">
-        <link rel="import" href="./components/digo/layout-footer/index.html">
-        <link rel="import" href="./components/digo/layout-header/index.html">
-    </head>
-    <body>
-        <layout-header></layout-header>
+    <!-- include flipper.js, jquery & bootstrap, (or angular) -->
+    <link rel="import" href="./resource/core.html">
 
-        <div class="container-fluid">
-            <div class="row">
-                <layout-nav class="col-md-2 sidebar" data-uri="./components/digo/layout-nav/mock.json"></layout-nav>
-                <div class="col-md-10 main">
-                  <h1 class="page-header">Dashboard</h1>
-                  <chart-oops id="oops" data-uri="./components/digo/chart-oops/mock.json"></chart-oops>
-                </div>
+    <!-- include necessary components -->
+    <link rel="import" href="./components/digo/chart-oops/index.html">
+    <link rel="import" href="./components/digo/chart-richtable/index.html">
+    <link rel="import" href="./components/digo/layout-nav/index.html">
+    <link rel="import" href="./components/digo/layout-footer/index.html">
+    <link rel="import" href="./components/digo/layout-header/index.html">
+
+    <script src="../bower_components/angular/angular.js"></script>
+    <script src="../bower_components/echarts/build/dist/echarts-all.js"></script>
+</head>
+
+<body>
+    <layout-header></layout-header>
+
+    <div class="container-fluid">
+        <div class="row">
+            <layout-nav class="col-md-2 sidebar" data-uri="./components/digo/layout-nav/mock.json"></layout-nav>
+            <div class="col-md-10 main">
+                <h1 class="page-header">Dashboard</h1>
+                <chart-richtable id="rich-table"></chart-richtable>
+                <chart-oops id="oops" data-uri="./components/digo/chart-oops/mock.json"></chart-oops>
             </div>
         </div>
-        <layout-footer></layout-footer>
+    </div>
+    <layout-footer></layout-footer>
 
-        <script>
-            var oops = document.getElementById('oops');
-            oops.initialize('test-rpt-code', {
-                start: '[',
-                end: ']'
-            });
-            $(oops).on('select-item', function(ev, param1) {
-                console.log('hi ~~ ' + param1);
-            });
+    <script>
+    var richTable = document.getElementById('rich-table'),
+        oops = document.getElementById('oops');
 
+    $.get('./mock/rich-table.json').then(function(data) {
+        richTable.initialize(data);
+    });
 
-        </script>
-    </body>
+    oops.initialize('test-rpt-code', {
+        start: '[',
+        end: ']'
+    });
+
+    $(oops).on('select-item', function(ev, param1) {
+        console.log('hi ~~ ' + param1);
+    });
+    </script>
+</body>
+
 </html>
