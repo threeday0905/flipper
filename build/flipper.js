@@ -106,6 +106,12 @@ function handleViews(component, options) {
     }
 }
 
+function handleStyle(component, options) {
+    if (options.style) {
+        component.style = options.style;
+    }
+}
+
 /* Element Prototype */
 function createElementProto(component) {
     var elementProto = Object.create(HTMLElement.prototype);
@@ -125,10 +131,13 @@ function createElementProto(component) {
                 component.model = value;
             }
         },
-        getView: {
-            value: function(viewName) {
-                return component.views[viewName || 'index'];
+        name: {
+            get: function() {
+                return component.name;
             }
+        },
+        getView: {
+            value: component.getView.bind(component)
         },
         createdCallback: {
             value: wrapCallback('createdCallback')
@@ -159,6 +168,7 @@ function Component(name) {
 
     this.model = {};
     this.views = {};
+    this.style = '';
 }
 
 
@@ -187,7 +197,12 @@ Component.prototype = {
         if (elementProto) {
             mixinElementProto(this, elementProto);
             hoistAttributes(this, elementProto, ['presenter', 'renderer']);
-            handleViews(this, elementProto);
+            //handleViews(this, elementProto);
+            handleStyle(this, elementProto);
+
+            if (elementProto.component) {
+                this.component = elementProto.component;
+            }
         }
     },
 
@@ -205,6 +220,21 @@ Component.prototype = {
     /* configuration methods */
     addView: function(viewTpl, viewName) {
         this.views[viewName || 'index'] = viewTpl + '';
+    },
+    getView: function(viewName) {
+        var result;
+        viewName = viewName || '';
+        $(this.component).find(' > template').each(function() {
+            var $tpl = $(this),
+                id = $tpl.attr('id') || '';
+
+            if (viewName === id) {
+                result = $tpl.html();
+                return false;
+            }
+        });
+
+        return result || '';
     },
     // Styles
 
@@ -247,8 +277,8 @@ Component.prototype = {
     handleElement: function(element) {
         return Promise.resolve()
             .then(this.fetchModel.bind(this, element))
-            .then(this.renderHTML.bind(this, element))
-            .then(this.createTree.bind(this, element))
+            .then(this.renderNode.bind(this, element))
+            .then(this.addStyle.bind(this, element))
             .then(this.bindEvent.bind(this, element));
     },
     fetchModel: function(element) {
@@ -259,10 +289,19 @@ Component.prototype = {
             });
         }
     },
+    renderNode: function(element) {
+        if (typeof element.render === 'function') {
+            return element.render();
+        }
+
+        return Promise.resolve()
+            .then(this.renderHTML.bind(this, element))
+            .then(this.createTree.bind(this, element));
+    },
     renderHTML: function(element, viewName) {
         var renderMethod = Flipper.getRender(this.renderer),
             model = element.model,
-            view  = this.views[viewName || 'index'],
+            view  = this.getView(viewName),
             html  = renderMethod(view, model);
 
         return html;
@@ -272,6 +311,22 @@ Component.prototype = {
                 element.createShadowRoot() : element;
 
         target.innerHTML = html;
+    },
+    addStyle: function(element) {
+        var style = document.createElement('style');
+        style.textContent = this.style;
+        style.setAttribute('referance-to', this.name);
+
+        if (element.shadowRoot && element.shadowRoot.innerHTML) {
+            element.shadowRoot.appendChild(style);
+        } else {
+            var existsStyle =
+                document.querySelector('style[referance-to="' + this.name + '"]');
+            if (!existsStyle) {
+                (document.head || document.body).appendChild(style);
+            }
+        }
+
     },
     bindEvent: function(element) {
         if (typeof element.bind === 'function') {
@@ -314,7 +369,8 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            console.log('component ' + name + ' is initializing automatically, forgot noscript attribute? ');
+            console.log('component ' + name + ' is initializing automatically' +
+                ', forgot noscript attribute? ');
             component.initialize();
         }, 1000);
         component.on('initialized', function() {
@@ -355,35 +411,66 @@ Flipper.register = function(name, elementProto) {
         throw new Error('component name could not be inferred.');
     }
 
-    console.log('register ' + name);
+    util.debug('register ' + name);
     /* initialize created component, or create it */
     initializeComponent(name, elementProto);
 };
+
+function collectViews(node) {
+    var views = {};
+    $(node).find(' > template').each(function() {
+        var $tpl = $(this);
+        views[ $tpl.attr('id') || '' ] = $tpl.html();
+    });
+    return views;
+}
+
+function collectStyle(node) {
+    var $node   = $(node),
+        baseURI = node.ownerDocument.baseURI,
+        style = '';
+
+    // TODO: Copy Attributes, such as
+    function extractStyleSheet() {
+        var $links = $node.find(' > link[rel="stylesheets"]');
+        $links.each(function() {
+            var href = new URL($(this).getAttribute('href', baseURI));
+            style += '@import "' + href + '";';
+        }).remove();
+
+    }
+    function extractStyleElement() {
+        var $styles = $node.find(' > style');
+        $styles.each(function() {
+            style += $(this).html();
+        }).remove();
+    }
+
+    extractStyleSheet();
+    extractStyleElement();
+
+    return style;
+}
 
 document.registerElement('web-component', {
     prototype: Object.create(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
 
-                var $component = $(this),
-                    name, options, views  = {},
-                    needToWait = true;
-
-                $component.find(' > template').map(function() {
-                    var $tpl = $(this);
-                    views[ $tpl.attr('id') || '' ] = $tpl.html();
-                });
+                var name, options, needToWait = true;
 
                 name = this.getAttribute('name');
 
                 options = {
-                    views:     views,
+                    component: this,
+                    //views: collectViews(this),
+                    style: collectStyle(this),
                     presenter: this.getAttribute('presenter'),
                     renderer:  this.getAttribute('renderer')
                 };
 
                 needToWait = !this.hasAttribute('noscript');
-                console.log('created ' + name);
+                util.debug('created ' + name);
                 createComponent(name, options, needToWait);
             }
         }
