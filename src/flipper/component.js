@@ -45,6 +45,12 @@ function handleViews(component, options) {
     }
 }
 
+function handleStyle(component, options) {
+    if (options.style) {
+        component.style = options.style;
+    }
+}
+
 /* Element Prototype */
 function createElementProto(component) {
     var elementProto = Object.create(HTMLElement.prototype);
@@ -64,10 +70,13 @@ function createElementProto(component) {
                 component.model = value;
             }
         },
-        getView: {
-            value: function(viewName) {
-                return component.views[viewName || 'index'];
+        name: {
+            get: function() {
+                return component.name;
             }
+        },
+        getView: {
+            value: component.getView.bind(component)
         },
         createdCallback: {
             value: wrapCallback('createdCallback')
@@ -98,6 +107,7 @@ function Component(name) {
 
     this.model = {};
     this.views = {};
+    this.style = '';
 }
 
 
@@ -126,7 +136,12 @@ Component.prototype = {
         if (elementProto) {
             mixinElementProto(this, elementProto);
             hoistAttributes(this, elementProto, ['presenter', 'renderer']);
-            handleViews(this, elementProto);
+            //handleViews(this, elementProto);
+            handleStyle(this, elementProto);
+
+            if (elementProto.component) {
+                this.component = elementProto.component;
+            }
         }
     },
 
@@ -144,6 +159,21 @@ Component.prototype = {
     /* configuration methods */
     addView: function(viewTpl, viewName) {
         this.views[viewName || 'index'] = viewTpl + '';
+    },
+    getView: function(viewName) {
+        var result;
+        viewName = viewName || '';
+        $(this.component).find(' > template').each(function() {
+            var $tpl = $(this),
+                id = $tpl.attr('id') || '';
+
+            if (viewName === id) {
+                result = $tpl.html();
+                return false;
+            }
+        });
+
+        return result || '';
     },
     // Styles
 
@@ -186,8 +216,8 @@ Component.prototype = {
     handleElement: function(element) {
         return Promise.resolve()
             .then(this.fetchModel.bind(this, element))
-            .then(this.renderHTML.bind(this, element))
-            .then(this.createTree.bind(this, element))
+            .then(this.renderNode.bind(this, element))
+            .then(this.addStyle.bind(this, element))
             .then(this.bindEvent.bind(this, element));
     },
     fetchModel: function(element) {
@@ -198,10 +228,19 @@ Component.prototype = {
             });
         }
     },
+    renderNode: function(element) {
+        if (typeof element.render === 'function') {
+            return element.render();
+        }
+
+        return Promise.resolve()
+            .then(this.renderHTML.bind(this, element))
+            .then(this.createTree.bind(this, element));
+    },
     renderHTML: function(element, viewName) {
         var renderMethod = Flipper.getRender(this.renderer),
             model = element.model,
-            view  = this.views[viewName || 'index'],
+            view  = this.getView(viewName),
             html  = renderMethod(view, model);
 
         return html;
@@ -211,6 +250,22 @@ Component.prototype = {
                 element.createShadowRoot() : element;
 
         target.innerHTML = html;
+    },
+    addStyle: function(element) {
+        var style = document.createElement('style');
+        style.textContent = this.style;
+        style.setAttribute('referance-to', this.name);
+
+        if (element.shadowRoot && element.shadowRoot.innerHTML) {
+            element.shadowRoot.appendChild(style);
+        } else {
+            var existsStyle =
+                document.querySelector('style[referance-to="' + this.name + '"]');
+            if (!existsStyle) {
+                (document.head || document.body).appendChild(style);
+            }
+        }
+
     },
     bindEvent: function(element) {
         if (typeof element.bind === 'function') {

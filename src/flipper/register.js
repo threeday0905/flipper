@@ -13,7 +13,8 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            console.log('component ' + name + ' is initializing automatically, forgot noscript attribute? ');
+            console.log('component ' + name + ' is initializing automatically' +
+                ', forgot noscript attribute? ');
             component.initialize();
         }, 1000);
         component.on('initialized', function() {
@@ -54,35 +55,66 @@ Flipper.register = function(name, elementProto) {
         throw new Error('component name could not be inferred.');
     }
 
-    console.log('register ' + name);
+    util.debug('register ' + name);
     /* initialize created component, or create it */
     initializeComponent(name, elementProto);
 };
+
+function collectViews(node) {
+    var views = {};
+    $(node).find(' > template').each(function() {
+        var $tpl = $(this);
+        views[ $tpl.attr('id') || '' ] = $tpl.html();
+    });
+    return views;
+}
+
+function collectStyle(node) {
+    var $node   = $(node),
+        baseURI = node.ownerDocument.baseURI,
+        style = '';
+
+    // TODO: Copy Attributes, such as
+    function extractStyleSheet() {
+        var $links = $node.find(' > link[rel="stylesheets"]');
+        $links.each(function() {
+            var href = new URL($(this).getAttribute('href', baseURI));
+            style += '@import "' + href + '";';
+        }).remove();
+
+    }
+    function extractStyleElement() {
+        var $styles = $node.find(' > style');
+        $styles.each(function() {
+            style += $(this).html();
+        }).remove();
+    }
+
+    extractStyleSheet();
+    extractStyleElement();
+
+    return style;
+}
 
 document.registerElement('web-component', {
     prototype: Object.create(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
 
-                var $component = $(this),
-                    name, options, views  = {},
-                    needToWait = true;
-
-                $component.find(' > template').map(function() {
-                    var $tpl = $(this);
-                    views[ $tpl.attr('id') || '' ] = $tpl.html();
-                });
+                var name, options, needToWait = true;
 
                 name = this.getAttribute('name');
 
                 options = {
-                    views:     views,
+                    component: this,
+                    //views: collectViews(this),
+                    style: collectStyle(this),
                     presenter: this.getAttribute('presenter'),
                     renderer:  this.getAttribute('renderer')
                 };
 
                 needToWait = !this.hasAttribute('noscript');
-                console.log('created ' + name);
+                util.debug('created ' + name);
                 createComponent(name, options, needToWait);
             }
         }
