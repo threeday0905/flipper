@@ -11,13 +11,6 @@
     <!-- include flipper.js, jquery & bootstrap, (or angular) -->
     <link rel="import" href="../build/flipper.html">
 
-    <!-- include necessary components -->
-    <link rel="import" href="./components/digo/chart-oops/index.html">
-    <link rel="import" href="./components/digo/chart-richtable/index.html">
-    <link rel="import" href="./components/digo/layout-nav/index.html">
-    <link rel="import" href="./components/digo/layout-footer/index.html">
-    <link rel="import" href="./components/digo/layout-header/index.html">
-
     <script src="../bower_components/angular/angular.js"></script>
     <script src="../bower_components/echarts/build/dist/echarts-all.js"></script>
 </head>
@@ -36,6 +29,22 @@
         </div>
     </div>
     <layout-footer></layout-footer>
+
+    <script>
+        Flipper.config('packages', {
+            digo: {
+                base: './components/digo'
+            }
+        });
+
+        Flipper.imports(
+            'chart-oops/',
+            'digo/chart-richtable/',
+            'digo/layout-header/',
+            'digo/layout-footer/',
+            'digo/layout-nav'
+        );
+    </script>
 
     <script>
     var richTable = document.getElementById('rich-table'),

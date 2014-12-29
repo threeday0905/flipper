@@ -14,7 +14,10 @@
     "vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
     ],
-    "vendor/css/bootstrap.css": [
+    "vendor/js/xtemplate.js": [
+        "../bower_components/xtemplate/build/xtemplate-standalone-debug.js"
+    ]
+    /*"vendor/css/bootstrap.css": [
         "../bower_components/bootstrap/dist/css/bootstrap.css"
     ],
     "vendor/css/bootstrap.css.map": [
@@ -38,9 +41,5 @@
     ],
     "vendor/fonts/glyphicons-halflings-regular.woff": [
         "../bower_components/bootstrap/dist/fonts/glyphicons-halflings-regular.woff"
-    ],
-
-    "vendor/js/xtemplate.js": [
-        "../bower_components/xtemplate/build/xtemplate-standalone-debug.js"
-    ]
+    ]*/
 }
