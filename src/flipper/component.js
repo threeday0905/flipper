@@ -180,6 +180,9 @@ Component.prototype = {
     /* created / attached cycle methods */
     createdCallback: function(element) {
         Promise.resolve()
+            .then(function() {
+                element.setAttribute('resolved', '');
+            })
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
             .then(function() {
@@ -187,8 +190,11 @@ Component.prototype = {
                     element.ready();
                 }
             })
+            .then(function() {
+                element.removeAttribute('resolved');
+            })
             .catch(function(err) {
-                console.error(err);
+                throw err;
             });
 
     },
@@ -197,9 +203,11 @@ Component.prototype = {
     },
     initElement: function(element) {
         element.$ = jQuery(element);
-
         if (typeof element.initialize === 'function') {
-            /* if element implement initialize, then wait unit it done */
+            return element.initialize();
+        }
+        /* if element implement initialize, then wait unit it done */
+        /*if (typeof element.initialize === 'function') {
             var _initialize = element.initialize;
             element.setAttribute('unresolved', '');
             return new Promise(function(resolve) {
@@ -211,7 +219,7 @@ Component.prototype = {
                 element.initialize = _initialize;
                 return result;
             });
-        }
+        }*/
     },
     handleElement: function(element) {
         return Promise.resolve()
@@ -221,12 +229,16 @@ Component.prototype = {
             .then(this.bindEvent.bind(this, element));
     },
     fetchModel: function(element) {
-        var self = this;
+        var self = this, result;
         if (typeof element.fetch === 'function') {
-            return element.fetch().then(function(data) {
-                self.model = data;
-            });
+            result = element.fetch();
+            if (util.isPromise(result)) {
+                result = result.then(function(data) {
+                    self.model = data;
+                });
+            }
         }
+        return result;
     },
     renderNode: function(element) {
         if (typeof element.render === 'function') {
