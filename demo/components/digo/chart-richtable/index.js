@@ -1,7 +1,11 @@
 Flipper.register({
-    initialize: function(config) {
+    initialize: function() {
+        var self = this;
+
         angular.module(this.name, [], angular.noop);
-        this.config = config;
+        return $.get(this.getAttribute('data-uri')).then(function(config) {
+                self.config = config;
+            });
     },
     render: function() {
         /* jshint camelcase: false */

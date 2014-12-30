@@ -23,8 +23,13 @@
             <layout-nav class="col-md-2 sidebar" data-uri="./components/digo/layout-nav/mock.json"></layout-nav>
             <div class="col-md-10 main">
                 <h1 class="page-header">Dashboard</h1>
-                <chart-richtable id="rich-table"></chart-richtable>
-                <chart-oops id="oops" data-uri="./components/digo/chart-oops/mock.json"></chart-oops>
+
+                <chart-richtable data-uri="./mock/rich-table.json"></chart-richtable>
+
+                <chart-oops rpt-code="test-rpt=-code"
+                    data-uri="./components/digo/chart-oops/mock.json"
+                    start="[" end="]"
+                ></chart-oops>
             </div>
         </div>
     </div>
@@ -44,24 +49,6 @@
             'digo/layout-footer/',
             'digo/layout-nav'
         );
-    </script>
-
-    <script>
-    var richTable = document.getElementById('rich-table'),
-        oops = document.getElementById('oops');
-
-    $.get('./mock/rich-table.json').then(function(data) {
-        richTable.initialize(data);
-    });
-
-    oops.initialize('test-rpt-code', {
-        start: '[',
-        end: ']'
-    });
-
-    $(oops).on('select-item', function(ev, param1) {
-        console.log('hi ~~ ' + param1);
-    });
     </script>
 </body>
 
