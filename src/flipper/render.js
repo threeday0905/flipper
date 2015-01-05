@@ -2,9 +2,16 @@ var renderMethods = {
     'default': function(template) {
         return template;
     },
-    xtpl: function(template, data) {
+    xtpl: function(template, data, element) {
         var xtpl = new XTemplate(template);
-        return xtpl.render(data);
+        return xtpl.render(data, {
+            commands: {
+                attr: function(scope, option) {
+                    var key = option.params && option.params[0];
+                    return key ? element.getAttribute(key) : key;
+                }
+            }
+        });
     }
 };
 
