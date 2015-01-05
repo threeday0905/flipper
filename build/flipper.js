@@ -49,9 +49,16 @@ var renderMethods = {
     'default': function(template) {
         return template;
     },
-    xtpl: function(template, data) {
+    xtpl: function(template, data, element) {
         var xtpl = new XTemplate(template);
-        return xtpl.render(data);
+        return xtpl.render(data, {
+            commands: {
+                attr: function(scope, option) {
+                    var key = option.params && option.params[0];
+                    return key ? element.getAttribute(key) : key;
+                }
+            }
+        });
     }
 };
 
@@ -297,6 +304,8 @@ Component.prototype = {
                 result = result.then(function(data) {
                     self.model = data;
                 });
+            } else if (typeof result === 'object') {
+                self.model = result;
             }
         }
         return result;
@@ -314,12 +323,20 @@ Component.prototype = {
         var renderMethod = Flipper.getRender(this.renderer),
             model = element.model,
             view  = this.getView(viewName),
-            html  = renderMethod(view, model);
+            html  = renderMethod(view, model, element);
 
         return html;
     },
+    getPresenter: function() {
+        var presenter = this.presenter;
+        if (presenter === 'light' || presenter === 'light-dom') {
+            return 'light-dom';
+        } else /* if (presenter === 'shadow' || presenter === 'shadow-dom') */ {
+            return 'shadow-dom';
+        }
+    },
     createTree: function(element, html) {
-        var target = this.presenter === 'shadow' ?
+        var target = this.getPresenter() === 'shadow-dom' ?
                 element.createShadowRoot() : element;
 
         target.innerHTML = html;
@@ -381,9 +398,10 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            console.log('component ' + name + ' is initializing automatically' +
+            /*console.log('component ' + name + ' is initializing automatically' +
                 ', forgot noscript attribute? ');
-            component.initialize();
+            component.initialize();*/
+
         }, 1000);
         component.on('initialized', function() {
             clearTimeout(timer);
@@ -488,6 +506,8 @@ document.registerElement('web-component', {
         }
     })
 });
+
+Flipper.components = components;
 
 
 var packages = {};
