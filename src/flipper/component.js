@@ -236,6 +236,8 @@ Component.prototype = {
                 result = result.then(function(data) {
                     self.model = data;
                 });
+            } else if (typeof result === 'object') {
+                self.model = result;
             }
         }
         return result;
@@ -253,12 +255,20 @@ Component.prototype = {
         var renderMethod = Flipper.getRender(this.renderer),
             model = element.model,
             view  = this.getView(viewName),
-            html  = renderMethod(view, model);
+            html  = renderMethod(view, model, element);
 
         return html;
     },
+    getPresenter: function() {
+        var presenter = this.presenter;
+        if (presenter === 'light' || presenter === 'light-dom') {
+            return 'light-dom';
+        } else /* if (presenter === 'shadow' || presenter === 'shadow-dom') */ {
+            return 'shadow-dom';
+        }
+    },
     createTree: function(element, html) {
-        var target = this.presenter === 'shadow' ?
+        var target = this.getPresenter() === 'shadow-dom' ?
                 element.createShadowRoot() : element;
 
         target.innerHTML = html;
