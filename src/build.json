@@ -4,7 +4,7 @@
         "./flipper/polyfill.js",
         "./flipper/utils.js",
         "./flipper/container.js",
-        "./flipper/render.js",
+        "./flipper/plugins.js",
         "./flipper/component.js",
         "./flipper/register.js",
         "./flipper/helpers.js",

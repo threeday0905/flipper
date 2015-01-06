@@ -29,3 +29,8 @@ util.log = function log() {
         console.log(msg);
     }
 };
+
+
+util.resolveUri = function(target, baseUri) {
+  return new URL(target, baseUri).toString();
+};

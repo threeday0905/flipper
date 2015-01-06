@@ -18,3 +18,11 @@ var renderMethods = {
 Flipper.getRender = function(mode) {
     return renderMethods[mode];
 };
+
+Flipper.getLoader = function() {
+    if (require) {
+        return require;
+    } else {
+        throw new Error('can not find loader');
+    }
+};
