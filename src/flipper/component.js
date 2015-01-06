@@ -194,6 +194,7 @@ Component.prototype = {
                 element.removeAttribute('resolved');
             })
             .catch(function(err) {
+                console.log(err);
                 throw err;
             });
 
