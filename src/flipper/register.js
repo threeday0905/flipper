@@ -62,6 +62,9 @@ Flipper.register = function(name, dependencies, elementProto) {
         elementProto = name;
         dependencies = undefined;
         name = tryGetNameByScript();
+    } else if (typeof name === 'string' && !Array.isArray(dependencies)) {
+        elementProto = dependencies;
+        dependencies = undefined;
     }
 
     if (!name) {
