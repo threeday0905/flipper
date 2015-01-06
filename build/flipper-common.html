@@ -1,0 +1,26 @@
+<link  href="./modules/bootstrap/css/bootstrap.css" rel="stylesheet">
+
+<script src="./modules/modulex/modulex-debug.js"></script>
+<script src="./modules/jquery/jquery.js"></script>
+<script src="./modules/bootstrap/js/bootstrap.js"></script>
+<script src="./modules/xtemplate/xtemplate-standalone-debug.js"></script>
+
+<script>
+    require.config({
+        packages: {
+            core: {
+                base: '//g.alicdn.com/kissy/k/5.0.1/'
+            }
+        }
+    });
+
+    define('jquery', function() {
+        return jQuery;
+    });
+
+    define('xtemplate', function() {
+        return XTemplate;
+    });
+</script>
+
+<script src="./flipper.js"></script>

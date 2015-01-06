@@ -41,6 +41,11 @@ util.log = function log() {
     }
 };
 
+
+util.resolveUri = function(target, baseUri) {
+  return new URL(target, baseUri).toString();
+};
+
 var Flipper = {
     version: '@@VERSION@@'
 };
@@ -64,6 +69,14 @@ var renderMethods = {
 
 Flipper.getRender = function(mode) {
     return renderMethods[mode];
+};
+
+Flipper.getLoader = function() {
+    if (require) {
+        return require;
+    } else {
+        throw new Error('can not find loader');
+    }
 };
 
 var COMPONENT_STATUS = {
@@ -423,27 +436,62 @@ function initializeComponent(name, options) {
     component.initialize(options);
 }
 
+function tryGetBaseUriByScript() {
+    var script = document.__currentScript || document.currentScript;
+    return script.baseURI;
+}
+
+function tryGetNameByScript() {
+    var script = document.__currentScript || document.currentScript,
+        parentNode = script && script.parentNode;
+    return parentNode && parentNode.getAttribute('name') || '';
+}
+
 /**
  * use to register new component,
  *     or attach config to exist component which defined from tag
  */
-Flipper.register = function(name, elementProto) {
-    if (typeof name === 'object') {
-        elementProto = name || {};
-        name = (function() {
-            var script = document.__currentScript || document.currentScript,
-                parentNode = script && script.parentNode;
-            return parentNode && parentNode.getAttribute('name') || '';
-        }());
+Flipper.register = function(name, dependencies, elementProto) {
+    if (Array.isArray(name)) { /* Flipper.register( [ dep1, dep2], { ... } ); */
+        elementProto = dependencies;
+        dependencies = name;
+        name = tryGetNameByScript();
+    } else if (typeof name === 'object') { /* Flipper.register( {...} ); */
+        elementProto = name;
+        dependencies = undefined;
+        name = tryGetNameByScript();
     }
 
     if (!name) {
         throw new Error('component name could not be inferred.');
     }
 
+    if (!elementProto) {
+        throw new Error('component prototype could not be inferred.');
+    }
+
     util.debug('register ' + name);
+
     /* initialize created component, or create it */
-    initializeComponent(name, elementProto);
+    if (!dependencies) {
+        initializeComponent(name, elementProto);
+    } else {
+        var baseURI = tryGetBaseUriByScript();
+        dependencies = dependencies.map(function(id) {
+            if (id.charAt(0) === '.') {
+                return util.resolveUri(id, baseURI);
+            } else {
+                return id;
+            }
+        });
+        require(dependencies, function() {
+            if (typeof elementProto === 'object') {
+                initializeComponent(name, elementProto);
+            } else if (typeof elementProto === 'function') {
+                initializeComponent(name, elementProto.apply(elementProto, arguments));
+            }
+        });
+    }
 };
 
 function collectViews(node) {
