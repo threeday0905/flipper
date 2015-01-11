@@ -1,3 +1,357 @@
+;(function(root) {
+    'use strict';
+
+/**
+ * Most of following contents are copied from underscore
+ */
+
+ /* jshint unused: false, -W079 */
+var tools = (function() {
+    /* jshint maxstatements: 30 */
+
+    var tools = {};
+
+    var ObjProto = Object.prototype,
+        toString = ObjProto.toString,
+        hasOwn = ObjProto.hasOwnProperty;
+
+    function addTypeCheck(typeName) {
+        tools['is' + typeName] = function(obj) {
+            return toString.call(obj) === '[object ' + typeName + ']';
+        };
+    }
+
+    function getTypeName(fn) {
+        if (tools.isNull(fn)) {
+            return 'Null';
+        } else if (fn.name) {
+            return fn.name;
+        } else {
+            var mat = /function (.+)\(/.exec(String(fn));
+            return mat ? mat[1] : '';
+        }
+    }
+
+    function getIsMethod(name) {
+        return tools['is' + name];
+    }
+
+    // Add some isType methods:
+    //      isArguments, isFunction, isString, isNumber, isDate, isRegExp.
+    addTypeCheck('Arguments');
+    addTypeCheck('Function');
+    addTypeCheck('String');
+    addTypeCheck('Number');
+    addTypeCheck('Date');
+    addTypeCheck('RegExp');
+
+    // Define a fallback version of the method in browsers (ahem, IE), where
+    // there isn't any inspectable "Arguments" type.
+    if (!tools.isArguments(arguments)) {
+        tools.isArguments = function(obj) {
+            return !!(obj && hasOwn.call(obj, 'callee'));
+        };
+    }
+
+
+
+    // Is a given value a DOM element?
+    tools.isElement = function(obj) {
+        return !!(obj && obj.nodeType === 1);
+    };
+
+    // Is a given variable an object?
+    tools.isObject = function(obj) {
+        return obj === Object(obj);
+    };
+
+
+    // Is a given value an array?
+    // Delegates to ECMA5's native Array.isArray
+    if (Array.isArray) {
+        tools.isArray = Array.isArray;
+    } else {
+        addTypeCheck('Array');
+    }
+
+    // Optimize `isFunction` if appropriate.
+    if (typeof(/./) !== 'function') {
+        tools.isFunction = function(obj) {
+            return typeof obj === 'function';
+        };
+    }
+
+    // Is a given value a boolean?
+    tools.isBoolean = function(obj) {
+        return obj === true || obj === false ||
+            toString.call(obj) === '[object Boolean]';
+    };
+
+
+    tools.isEmpty = function(obj) {
+        if (tools.isNull(obj)) {
+            return true;
+        } else if (tools.isArray(obj) || tools.isString(obj)) {
+            return obj.length === 0;
+        } else {
+            return false;
+        }
+    };
+
+    // Is a given value equal to null o equal to undefined?
+    tools.isNull = function(obj) {
+        return obj === null || obj === void 0;
+    };
+
+    tools.notNull = function(obj) {
+        return !tools.isNull(obj);
+    };
+
+    tools.notEmpty = function(obj) {
+        return !tools.isEmpty(obj);
+    };
+
+
+    tools.is = function(obj) {
+        var args = arguments;
+        for (var i = 1, len = args.length; i < len; i += 1) {
+            var type = args[i],
+                method = getIsMethod( getTypeName(type) );
+
+            if (method && method(obj)) {
+                return true;
+            }
+
+            if (tools.isFunction(type) && obj instanceof type) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    tools.has = function(obj, prop) {
+        var result = true,
+            key, type;
+
+        if (tools.isString(prop)) {
+            return tools.notNull(obj[prop]);
+        } else if (tools.isArray(prop)) {
+            /* jshint plusplus: false */
+            for (key = prop.length; key--; ) {
+                if (tools.isString(prop[key]) && !obj[prop[key]] ) {
+                    result = false;
+                    break;
+                }
+            }
+        } else if (tools.isObject(prop)) {
+            for (key in prop) {
+                /*jshint forin:false */
+                type = prop[key];
+                if (!obj[key] || !tools.is(obj[key], type)) {
+                    result = false;
+                    break;
+                }
+            }
+        } else {
+            result = false;
+        }
+        return result;
+    };
+
+    tools.equalTo = function(obj, value) {
+        return obj === value;
+    };
+
+    return tools;
+}());
+
+/* jshint unused: false, -W079 */
+var errorMessage = {
+    prefix : 'Not Expected! ',
+    defMsg : '{0} failed condition: {1} with \"{2}\"',
+    msgs: {
+        is: '{0} is not match expected type',
+        has: '{0} does not have expected properties',
+        equalTo: '{0} is not equal to {3}'
+    },
+    get: function(toolName, argName, obj, arg1) {
+        var msg = this.msgs[toolName] || this.defMsg;
+        msg = msg.replace(/\{0\}/, argName || 'arg') // argument name
+                 .replace(/\{1\}/, toolName + '()')  // tool name
+                 .replace(/\{2\}/, obj ? obj.toString() : '') // obj value
+                 .replace(/\{3\}/, arg1 ? arg1 : ''); // compare value
+
+        return this.prefix + msg;
+    }
+};
+
+/* jshint unused: false, -W079 */
+var rejectHandler = {
+    methods: {
+        'throw': function(msg) {
+            var err =  new Error(msg);
+            if (tools.isString(err.stack)) {
+                err.stack =
+                    err.stack.replace(/^ *at.+args-expect.js.+\n/gm, '');
+            }
+            throw err;
+        },
+        log: function(msg) {
+            if (console && console.log) {
+                console.log(msg);
+            }
+        },
+        none: function() {
+
+        }
+    },
+    generate: function(keyOrFn) {
+        var rejectFn,
+            methods = this.methods;
+
+        if (tools.isString(keyOrFn)) {
+            rejectFn = methods[keyOrFn];
+            if (!rejectFn) {
+                methods.log('failed to find the reject method: ' + keyOrFn);
+                rejectFn = methods.none;
+            }
+        } else if (tools.isFunction(keyOrFn)) {
+            rejectFn = keyOrFn;
+        } else {
+            rejectFn = methods['throw'];
+        }
+
+        return rejectFn;
+    }
+};
+
+var slice = Array.prototype.slice;
+function ExpectChain(onReject) {
+    var self = this;
+
+    function createCheckWrapper(fnName, checkIt) {
+        function check(obj, name, args) {
+            var items = [obj].concat(args);
+            if (!checkIt.apply(null, items)) {
+                self.reject(
+                    errorMessage.get(fnName, name, obj, items[1])
+                );
+            }
+        }
+
+        return function() {
+            var args = slice.call(arguments),
+                obj = self.obj;
+
+            if (ExpectChain.isEnable) {
+                if (self.multiArg && obj.length) {
+                    for (var i = 0, len = obj.length; i < len; i += 1) {
+                        check(obj[i], '', args);
+                    }
+                } else {
+                    check(obj, self.name, args);
+                }
+            }
+            return self;
+        };
+    }
+
+
+    for (var detectFnKey in tools) {
+        /* jshint forin: false */
+        this[detectFnKey] = createCheckWrapper(
+            detectFnKey,
+            tools[detectFnKey]
+        );
+    }
+
+
+    this.reject = function(msg) {
+        if (!this.rejected) {
+            this.rejected = true;
+            if (tools.isFunction(onReject)) {
+                onReject(msg);
+            }
+        }
+        return this;
+    };
+
+    this.start = function(obj, name) {
+        this.multiArg = this.rejected = false;
+        this.name = name ||'';
+        this.obj = obj;
+        return this;
+    };
+
+    this.all = function() {
+        this.start(slice.call(arguments));
+        this.multiArg = true;
+        return this;
+    };
+}
+
+ExpectChain.isEnable = true;
+ExpectChain.enable = function() {
+    ExpectChain.isEnable = true;
+};
+ExpectChain.disable = function() {
+    ExpectChain.isEnable = false;
+};
+
+/* jshint unused: false, -W079 */
+
+var createExpect = function(onReject) {
+    var chain = new ExpectChain(onReject);
+
+    var expectFn = function(obj, name) {
+        return chain.start(obj, name);
+    };
+
+    expectFn.all = function() {
+        var args = arguments;
+        if (args.length === 1 && tools.isArguments(args[0])) {
+            args = args[0];
+        }
+        return chain.all.apply(chain, args);
+    };
+
+    expectFn.mode = function(keyOrFn) {
+        return createExpect(
+            rejectHandler.generate(keyOrFn)
+        );
+    };
+
+    expectFn.enable = function() {
+        ExpectChain.enable();
+        return this;
+    };
+
+    expectFn.disable = function() {
+        ExpectChain.disable();
+        return this;
+    };
+
+    return expectFn;
+};
+
+function definition() {
+    return createExpect(
+        rejectHandler.generate() // it will gen default throw handler
+    );
+}
+
+if (typeof exports === 'object') {
+    module.exports = definition();
+} else if (root.KISSY && typeof root.KISSY.add === 'function') {
+    KISSY.add(definition);
+} else if (typeof root.define === 'function' && root.define.amd) {
+    root.define(definition);
+} else {
+    root.expect = definition();
+}
+
+})(this);
+
 ;(function(window) {
 'use strict';
 
@@ -5,18 +359,51 @@
     TODO Polyfills:
     - all es5 feature (Object.keys, Array.isArray, Object.create, etc.)
     - current script
+    - new URL
     - Promise
     - web components
  */
 
-var util = {};
+ var currentScriptDescriptor = {
+   get: function() {
+     var script = document.currentScript ||
+         // NOTE: only works when called in synchronously executing code.
+         // readyState should check if `loading` but IE10 is
+         // interactive when scripts run so we cheat.
+         (document.readyState !== 'complete' ?
+         document.scripts[document.scripts.length - 1] : null);
+     return script;
+   },
+   configurable: true
+ };
 
-util.noop = function() {};
-util.debug = function() {
+ Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
 
+var configs = {
+    templateEngine: 'default',
+    injectionMode:  'shadow-dom'
 };
 
-util.format = function format(pattern) {
+var Flipper = {
+    version: '@@VERSION@@',
+    configs: configs
+};
+
+Flipper.config = function(key, value) {
+    if (typeof key === 'object' && arguments.length === 1) {
+        utils.mixin(configs, key);
+    } else if (typeof key === 'string' && arguments.length === 2) {
+        configs[key] = value;
+    } else {
+        throw new Error('unsupoorted config type. key: ' + key + ', value: ' + value);
+    }
+};
+
+var utils = {};
+
+utils.noop = function() {};
+
+utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
         i = i + 1;
@@ -24,60 +411,168 @@ util.format = function format(pattern) {
     });
 };
 
-util.isPromise = function isPromise(obj) {
+utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-util.mixin = function mixin(to, from) {
+utils.mixin = function mixin(to, from) {
     Object.getOwnPropertyNames(from).forEach(function(name) {
-        Object.defineProperty(to, name, Object.getOwnPropertyDescriptor(from, name));
+        Object.defineProperty(to, name,
+            Object.getOwnPropertyDescriptor(from, name)
+        );
     });
 };
 
-util.log = function log() {
-    var msg = util.format.apply(util, arguments);
+utils.log = function log() {
+    var msg = utils.format.apply(utils, arguments);
     if (typeof console.log === 'function') {
         console.log(msg);
     }
 };
 
 
-util.resolveUri = function(target, baseUri) {
-  return new URL(target, baseUri).toString();
+utils.resolveUri = function(target, baseUri) {
+    return new URL(target, baseUri).toString();
 };
 
-var Flipper = {
-    version: '@@VERSION@@'
-};
+utils.requireDebugger = function(type) {
+    var DEBUG = typeof window.DEBUG === 'string' ? window.DEBUG : '';
 
-var renderMethods = {
-    'default': function(template) {
-        return template;
-    },
-    xtpl: function(template, data, element) {
-        var xtpl = new XTemplate(template);
-        return xtpl.render(data, {
-            commands: {
-                attr: function(scope, option) {
-                    var key = option.params && option.params[0];
-                    return key ? element.getAttribute(key) : key;
-                }
-            }
-        });
-    }
-};
-
-Flipper.getRender = function(mode) {
-    return renderMethods[mode];
-};
-
-Flipper.getLoader = function() {
-    if (require) {
-        return require;
+    if (DEBUG === '*' || DEBUG.lastIndexOf(type) > -1 ) {
+        return function() {
+            var msg = utils.format.apply(utils, arguments);
+            console.log('[' + type + ']' + msg);
+        };
     } else {
-        throw new Error('can not find loader');
+        return utils.noop;
     }
 };
+
+Flipper.utils = utils;
+
+var templateEngines = {};
+
+function registerTemplateEngine(name, engine) {
+    expect(name).isString();
+    expect(engine).notNull();
+
+    if (templateEngines[name]) {
+        throw new Error('template engine [' + name + '] is already registered');
+    }
+
+    if (typeof engine.render !== 'function') {
+        throw new Error('could not found render method for engine: ' + name);
+    }
+
+
+    var views = {};
+
+    templateEngines[name] = {
+        hasView: function(viewId) {
+            expect(viewId).isString().notNull();
+            return !!views[viewId];
+        },
+        getView: function(viewId) {
+            expect(viewId).isString().notNull();
+            return views[viewId];
+        },
+        addView: function(viewId, viewContent) {
+            expect(viewId).isString().notNull();
+            expect(viewContent).isString();
+            views[viewId] = viewContent;
+        },
+        renderView: function(viewId, model, options) {
+            expect(viewId).isString().notNull();
+            var view = views[viewId];
+
+            if (!view) {
+                throw new Error(
+                    'could not found view "' + viewId + '" on engine ' + name);
+            }
+
+            options.viewId = viewId;
+            return engine.render(view, model, options);
+        }
+    };
+}
+
+function getTemplateEngine(name) {
+    if (!templateEngines[name]) {
+        throw new Error('could not found the template engine: ' + name);
+    }
+    return templateEngines[name];
+}
+
+registerTemplateEngine('default', {
+    render: function(viewContent) {
+        return viewContent;
+    }
+});
+
+Flipper.registerTemplateEngine = registerTemplateEngine;
+Flipper.getTemplateEngine = getTemplateEngine;
+
+var loaders = {};
+
+function registerLoader(name, loader) {
+    expect(name).isString();
+    expect(loader).notNull();
+
+    if (loaders[name]) {
+        throw new Error('loaders [' + name + '] is already registered');
+    }
+
+    if (typeof loader !== 'function') {
+        throw new Error('loader must be a function' + name);
+    }
+
+    loaders[name] = loader;
+}
+
+function getLoader(name) {
+    if (!loaders[name]) {
+        throw new Error('could not found the loader: ' + name);
+    }
+
+    return loaders[name];
+}
+
+if (window.require) {
+    registerLoader('default', window.require);
+    utils.requireDebugger('plugin-loader')
+        ('register default loader with window.require');
+}
+
+Flipper.registerLoader = registerLoader;
+Flipper.getLoader = getLoader;
+
+var dataCenter = {};
+
+var uniqueId = 0;
+function getUnqiueId() {
+    uniqueId += 1;
+    return uniqueId;
+}
+
+function requestModelSpace(model) {
+    var spaceId = getUnqiueId();
+    dataCenter[spaceId] = model || {};
+    return spaceId;
+}
+
+function getModelSpace(spaceId) {
+    return dataCenter[spaceId];
+}
+
+function removeModelSpace(spaceId) {
+    delete dataCenter[spaceId];
+}
+
+Flipper.requestModelSpace = requestModelSpace;
+Flipper.getModelSpace = getModelSpace;
+Flipper.removeModelSpace = removeModelSpace;
+
+window._dataCenter = dataCenter;
 
 var COMPONENT_STATUS = {
     // ERROR: -1,
@@ -132,6 +627,13 @@ function handleStyle(component, options) {
     }
 }
 
+function catchPromiseError(err) {
+    console.log(err);
+    if (err.stack) {
+        console.log(err.stack);
+    }
+}
+
 /* Element Prototype */
 function createElementProto(component) {
     var elementProto = Object.create(HTMLElement.prototype);
@@ -151,13 +653,34 @@ function createElementProto(component) {
                 component.model = value;
             }
         },
-        name: {
-            get: function() {
-                return component.name;
-            }
-        },
         getView: {
             value: component.getView.bind(component)
+        },
+        renderView: {
+            value: function(viewName, data, options) {
+                if (typeof viewName === 'object') {
+                    options = data;
+                    data = viewName;
+                    viewName = 'index';
+                }
+                options = options || {};
+                options.element = this;
+                return component.renderView(viewName, data, options);
+            }
+        },
+        refresh: {
+            value: function() {
+                var element = this;
+                Promise.resolve()
+                    .then(component.renderNode.bind(component, element))
+                    .then(function() {
+                        if (typeof element.ready === 'function') {
+                            element.ready();
+                        }
+                    })
+                    /*jshint -W024 */
+                    .catch(catchPromiseError);
+            }
         },
         createdCallback: {
             value: wrapCallback('createdCallback')
@@ -183,8 +706,8 @@ function Component(name) {
 
     this.elementProto = createElementProto(this);
 
-    this.presenter    = 'shadow'; /* render to shadow root OR inner HTML */
-    this.renderer = 'default';
+    this.templateEngine = 'default';
+    this.injectionMode  = 'shadow-dom';
 
     this.model = {};
     this.views = {};
@@ -216,7 +739,7 @@ Component.prototype = {
 
         if (elementProto) {
             mixinElementProto(this, elementProto);
-            hoistAttributes(this, elementProto, ['presenter', 'renderer']);
+            hoistAttributes(this, elementProto, ['templateEngine', 'injectionMode']);
             //handleViews(this, elementProto);
             handleStyle(this, elementProto);
 
@@ -243,7 +766,11 @@ Component.prototype = {
     },
     getView: function(viewName) {
         var result;
-        viewName = viewName || '';
+
+        if (!viewName || viewName === 'index') {
+            viewName = '';
+        }
+
         $(this.component).find(' > template').each(function() {
             var $tpl = $(this),
                 id = $tpl.attr('id') || '';
@@ -254,7 +781,31 @@ Component.prototype = {
             }
         });
 
+        if (!result) {
+            $(this.component).find(' > script[type="template"]').each(function() {
+                var $tpl = $(this),
+                    id = $tpl.attr('id') || '';
+
+                if (viewName === id) {
+                    result = $tpl.html();
+                    return false;
+                }
+            });
+        }
+
         return result || '';
+    },
+    renderView: function(viewName, data, options) {
+        viewName = viewName || 'index';
+
+        var templateEngine = Flipper.getTemplateEngine(this.templateEngine),
+            viewId = this.name + '-' + viewName;
+
+        if (!templateEngine.hasView(viewId)) {
+            templateEngine.addView(viewId, this.getView(viewName));
+        }
+
+        return templateEngine.renderView(viewId, data, options);
     },
     // Styles
 
@@ -262,7 +813,7 @@ Component.prototype = {
     createdCallback: function(element) {
         Promise.resolve()
             .then(function() {
-                element.setAttribute('resolved', '');
+                element.setAttribute('unresolved', '');
             })
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
@@ -272,19 +823,20 @@ Component.prototype = {
                 }
             })
             .then(function() {
-                element.removeAttribute('resolved');
+                element.removeAttribute('unresolved');
             })
-            .catch(function(err) {
-                console.log(err);
-                throw err;
-            });
+            /*jshint -W024 */
+            .catch(catchPromiseError);
 
     },
     attachedCallback: function() {
 
     },
     initElement: function(element) {
-        element.$ = jQuery(element);
+        if (typeof jQuery === 'function') {
+            element.$ = jQuery(element);
+        }
+
         if (typeof element.initialize === 'function') {
             return element.initialize();
         }
@@ -314,47 +866,53 @@ Component.prototype = {
         var self = this, result;
         if (typeof element.fetch === 'function') {
             result = element.fetch();
-            if (util.isPromise(result)) {
+            if (utils.isPromise(result)) {
                 result = result.then(function(data) {
                     self.model = data;
                 });
             } else if (typeof result === 'object') {
                 self.model = result;
             }
+        } else if (element.hasAttribute('model-id')) {
+            element.model = Flipper.getModelSpace(element.getAttribute('model-id'));
         }
         return result;
     },
+
+    /* refersh flow */
     renderNode: function(element) {
         if (typeof element.render === 'function') {
             return element.render();
         }
 
         return Promise.resolve()
+            .then(this.formatModel.bind(this, element))
             .then(this.renderHTML.bind(this, element))
             .then(this.createTree.bind(this, element));
     },
-    renderHTML: function(element, viewName) {
-        var renderMethod = Flipper.getRender(this.renderer),
-            model = element.model,
-            view  = this.getView(viewName),
-            html  = renderMethod(view, model, element);
-
-        return html;
-    },
-    getPresenter: function() {
-        var presenter = this.presenter;
-        if (presenter === 'light' || presenter === 'light-dom') {
-            return 'light-dom';
-        } else /* if (presenter === 'shadow' || presenter === 'shadow-dom') */ {
-            return 'shadow-dom';
+    formatModel: function(element) {
+        if (typeof element.formatModel === 'function') {
+            return element.formatModel();
+        } else {
+            return element.model;
         }
     },
+    renderHTML: function(element, model) {
+        var viewName = 'index';
+        return this.renderView(viewName, model, {
+            element: element
+        });
+    },
     createTree: function(element, html) {
-        var target = this.getPresenter() === 'shadow-dom' ?
-                element.createShadowRoot() : element;
+        /* if no specific value, then get from flipper global config */
+        var isLightDom = this.injectionMode === 'light-dom' || 'light';
+
+        var target = isLightDom ? element : element.createShadowRoot();
 
         target.innerHTML = html;
     },
+
+
     addStyle: function(element) {
         var style = document.createElement('style');
         style.textContent = this.style;
@@ -474,7 +1032,6 @@ Flipper.register = function(name, dependencies, elementProto) {
         throw new Error('component prototype could not be inferred.');
     }
 
-    util.debug('register ' + name);
 
     /* initialize created component, or create it */
     if (!dependencies) {
@@ -483,7 +1040,7 @@ Flipper.register = function(name, dependencies, elementProto) {
         var baseURI = tryGetBaseUriByScript();
         dependencies = dependencies.map(function(id) {
             if (id.charAt(0) === '.') {
-                return util.resolveUri(id, baseURI);
+                return utils.resolveUri(id, baseURI);
             } else {
                 return id;
             }
@@ -547,12 +1104,12 @@ document.registerElement('web-component', {
                     component: this,
                     //views: collectViews(this),
                     style: collectStyle(this),
-                    presenter: this.getAttribute('presenter'),
-                    renderer:  this.getAttribute('renderer')
+
+                    templateEngine: this.getAttribute('template-engine'),
+                    injectionMode:  this.getAttribute('injection-mode')
                 };
 
                 needToWait = !this.hasAttribute('noscript');
-                util.debug('created ' + name);
                 createComponent(name, options, needToWait);
             }
         }
@@ -560,7 +1117,6 @@ document.registerElement('web-component', {
 });
 
 Flipper.components = components;
-
 
 var packages = {};
 
