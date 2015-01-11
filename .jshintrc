@@ -67,7 +67,9 @@
 
   "globals": {
     "console"    : false,
+    "expect"     : false,
     "Flipper"    : false,
+    "utils"      : false,
     "XTemplate"  : false,
     "define"     : false,
     "require"    : false,
