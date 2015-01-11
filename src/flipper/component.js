@@ -51,6 +51,13 @@ function handleStyle(component, options) {
     }
 }
 
+function catchPromiseError(err) {
+    console.log(err);
+    if (err.stack) {
+        console.log(err.stack);
+    }
+}
+
 /* Element Prototype */
 function createElementProto(component) {
     var elementProto = Object.create(HTMLElement.prototype);
@@ -70,13 +77,34 @@ function createElementProto(component) {
                 component.model = value;
             }
         },
-        name: {
-            get: function() {
-                return component.name;
-            }
-        },
         getView: {
             value: component.getView.bind(component)
+        },
+        renderView: {
+            value: function(viewName, data, options) {
+                if (typeof viewName === 'object') {
+                    options = data;
+                    data = viewName;
+                    viewName = 'index';
+                }
+                options = options || {};
+                options.element = this;
+                return component.renderView(viewName, data, options);
+            }
+        },
+        refresh: {
+            value: function() {
+                var element = this;
+                Promise.resolve()
+                    .then(component.renderNode.bind(component, element))
+                    .then(function() {
+                        if (typeof element.ready === 'function') {
+                            element.ready();
+                        }
+                    })
+                    /*jshint -W024 */
+                    .catch(catchPromiseError);
+            }
         },
         createdCallback: {
             value: wrapCallback('createdCallback')
@@ -102,8 +130,8 @@ function Component(name) {
 
     this.elementProto = createElementProto(this);
 
-    this.presenter    = 'shadow'; /* render to shadow root OR inner HTML */
-    this.renderer = 'default';
+    this.templateEngine = 'default';
+    this.injectionMode  = 'shadow-dom';
 
     this.model = {};
     this.views = {};
@@ -135,7 +163,7 @@ Component.prototype = {
 
         if (elementProto) {
             mixinElementProto(this, elementProto);
-            hoistAttributes(this, elementProto, ['presenter', 'renderer']);
+            hoistAttributes(this, elementProto, ['templateEngine', 'injectionMode']);
             //handleViews(this, elementProto);
             handleStyle(this, elementProto);
 
@@ -162,7 +190,11 @@ Component.prototype = {
     },
     getView: function(viewName) {
         var result;
-        viewName = viewName || '';
+
+        if (!viewName || viewName === 'index') {
+            viewName = '';
+        }
+
         $(this.component).find(' > template').each(function() {
             var $tpl = $(this),
                 id = $tpl.attr('id') || '';
@@ -173,7 +205,31 @@ Component.prototype = {
             }
         });
 
+        if (!result) {
+            $(this.component).find(' > script[type="template"]').each(function() {
+                var $tpl = $(this),
+                    id = $tpl.attr('id') || '';
+
+                if (viewName === id) {
+                    result = $tpl.html();
+                    return false;
+                }
+            });
+        }
+
         return result || '';
+    },
+    renderView: function(viewName, data, options) {
+        viewName = viewName || 'index';
+
+        var templateEngine = Flipper.getTemplateEngine(this.templateEngine),
+            viewId = this.name + '-' + viewName;
+
+        if (!templateEngine.hasView(viewId)) {
+            templateEngine.addView(viewId, this.getView(viewName));
+        }
+
+        return templateEngine.renderView(viewId, data, options);
     },
     // Styles
 
@@ -181,7 +237,7 @@ Component.prototype = {
     createdCallback: function(element) {
         Promise.resolve()
             .then(function() {
-                element.setAttribute('resolved', '');
+                element.setAttribute('unresolved', '');
             })
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
@@ -191,19 +247,20 @@ Component.prototype = {
                 }
             })
             .then(function() {
-                element.removeAttribute('resolved');
+                element.removeAttribute('unresolved');
             })
-            .catch(function(err) {
-                console.log(err);
-                throw err;
-            });
+            /*jshint -W024 */
+            .catch(catchPromiseError);
 
     },
     attachedCallback: function() {
 
     },
     initElement: function(element) {
-        element.$ = jQuery(element);
+        if (typeof jQuery === 'function') {
+            element.$ = jQuery(element);
+        }
+
         if (typeof element.initialize === 'function') {
             return element.initialize();
         }
@@ -233,47 +290,53 @@ Component.prototype = {
         var self = this, result;
         if (typeof element.fetch === 'function') {
             result = element.fetch();
-            if (util.isPromise(result)) {
+            if (utils.isPromise(result)) {
                 result = result.then(function(data) {
                     self.model = data;
                 });
             } else if (typeof result === 'object') {
                 self.model = result;
             }
+        } else if (element.hasAttribute('model-id')) {
+            element.model = Flipper.getModelSpace(element.getAttribute('model-id'));
         }
         return result;
     },
+
+    /* refersh flow */
     renderNode: function(element) {
         if (typeof element.render === 'function') {
             return element.render();
         }
 
         return Promise.resolve()
+            .then(this.formatModel.bind(this, element))
             .then(this.renderHTML.bind(this, element))
             .then(this.createTree.bind(this, element));
     },
-    renderHTML: function(element, viewName) {
-        var renderMethod = Flipper.getRender(this.renderer),
-            model = element.model,
-            view  = this.getView(viewName),
-            html  = renderMethod(view, model, element);
-
-        return html;
-    },
-    getPresenter: function() {
-        var presenter = this.presenter;
-        if (presenter === 'light' || presenter === 'light-dom') {
-            return 'light-dom';
-        } else /* if (presenter === 'shadow' || presenter === 'shadow-dom') */ {
-            return 'shadow-dom';
+    formatModel: function(element) {
+        if (typeof element.formatModel === 'function') {
+            return element.formatModel();
+        } else {
+            return element.model;
         }
     },
+    renderHTML: function(element, model) {
+        var viewName = 'index';
+        return this.renderView(viewName, model, {
+            element: element
+        });
+    },
     createTree: function(element, html) {
-        var target = this.getPresenter() === 'shadow-dom' ?
-                element.createShadowRoot() : element;
+        /* if no specific value, then get from flipper global config */
+        var isLightDom = this.injectionMode === 'light-dom' || 'light';
+
+        var target = isLightDom ? element : element.createShadowRoot();
 
         target.innerHTML = html;
     },
+
+
     addStyle: function(element) {
         var style = document.createElement('style');
         style.textContent = this.style;

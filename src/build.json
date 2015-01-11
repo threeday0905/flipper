@@ -1,23 +1,26 @@
 {
     "flipper.js": [
+        "../bower_components/args-expect/lib/args-expect.js",
         "./temp/intro.snippet",
         "./flipper/polyfill.js",
+        "./flipper/root.js",
         "./flipper/utils.js",
-        "./flipper/container.js",
-        "./flipper/plugins.js",
+        "./flipper/plugin-render.js",
+        "./flipper/plugin-loader.js",
+        "./flipper/data-center.js",
         "./flipper/component.js",
         "./flipper/register.js",
         "./flipper/helpers.js",
         "./flipper/exports.js",
         "./temp/outro.snippet"
     ],
-    "vendor/js/jquery.js": [
+    /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
     ],
     "vendor/js/xtemplate.js": [
         "../bower_components/xtemplate/build/xtemplate-standalone-debug.js"
     ]
-    /*"vendor/css/bootstrap.css": [
+    "vendor/css/bootstrap.css": [
         "../bower_components/bootstrap/dist/css/bootstrap.css"
     ],
     "vendor/css/bootstrap.css.map": [

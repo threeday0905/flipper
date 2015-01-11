@@ -75,7 +75,6 @@ Flipper.register = function(name, dependencies, elementProto) {
         throw new Error('component prototype could not be inferred.');
     }
 
-    util.debug('register ' + name);
 
     /* initialize created component, or create it */
     if (!dependencies) {
@@ -84,7 +83,7 @@ Flipper.register = function(name, dependencies, elementProto) {
         var baseURI = tryGetBaseUriByScript();
         dependencies = dependencies.map(function(id) {
             if (id.charAt(0) === '.') {
-                return util.resolveUri(id, baseURI);
+                return utils.resolveUri(id, baseURI);
             } else {
                 return id;
             }
@@ -148,12 +147,12 @@ document.registerElement('web-component', {
                     component: this,
                     //views: collectViews(this),
                     style: collectStyle(this),
-                    presenter: this.getAttribute('presenter'),
-                    renderer:  this.getAttribute('renderer')
+
+                    templateEngine: this.getAttribute('template-engine'),
+                    injectionMode:  this.getAttribute('injection-mode')
                 };
 
                 needToWait = !this.hasAttribute('noscript');
-                util.debug('created ' + name);
                 createComponent(name, options, needToWait);
             }
         }

@@ -1,4 +1,3 @@
-
 var packages = {};
 
 function endsWtih(str, suffix) {

@@ -1,11 +1,8 @@
-var util = {};
+var utils = {};
 
-util.noop = function() {};
-util.debug = function() {
+utils.noop = function() {};
 
-};
-
-util.format = function format(pattern) {
+utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
         i = i + 1;
@@ -13,24 +10,41 @@ util.format = function format(pattern) {
     });
 };
 
-util.isPromise = function isPromise(obj) {
+utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-util.mixin = function mixin(to, from) {
+utils.mixin = function mixin(to, from) {
     Object.getOwnPropertyNames(from).forEach(function(name) {
-        Object.defineProperty(to, name, Object.getOwnPropertyDescriptor(from, name));
+        Object.defineProperty(to, name,
+            Object.getOwnPropertyDescriptor(from, name)
+        );
     });
 };
 
-util.log = function log() {
-    var msg = util.format.apply(util, arguments);
+utils.log = function log() {
+    var msg = utils.format.apply(utils, arguments);
     if (typeof console.log === 'function') {
         console.log(msg);
     }
 };
 
 
-util.resolveUri = function(target, baseUri) {
-  return new URL(target, baseUri).toString();
+utils.resolveUri = function(target, baseUri) {
+    return new URL(target, baseUri).toString();
 };
+
+utils.requireDebugger = function(type) {
+    var DEBUG = typeof window.DEBUG === 'string' ? window.DEBUG : '';
+
+    if (DEBUG === '*' || DEBUG.lastIndexOf(type) > -1 ) {
+        return function() {
+            var msg = utils.format.apply(utils, arguments);
+            console.log('[' + type + ']' + msg);
+        };
+    } else {
+        return utils.noop;
+    }
+};
+
+Flipper.utils = utils;
