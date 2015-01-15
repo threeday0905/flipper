@@ -1,7 +1,7 @@
 {
     "flipper.js": [
         "../bower_components/args-expect/lib/args-expect.js",
-        "./temp/intro.snippet",
+        "./intro.snippet",
         "./flipper/polyfill.js",
         "./flipper/root.js",
         "./flipper/utils.js",
@@ -12,7 +12,7 @@
         "./flipper/register.js",
         "./flipper/helpers.js",
         "./flipper/exports.js",
-        "./temp/outro.snippet"
+        "./outro.snippet"
     ],
     /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
