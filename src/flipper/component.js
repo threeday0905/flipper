@@ -163,7 +163,8 @@ Component.prototype = {
 
         if (elementProto) {
             mixinElementProto(this, elementProto);
-            hoistAttributes(this, elementProto, ['templateEngine', 'injectionMode']);
+            hoistAttributes(this, elementProto, [
+                'templateEngine', 'injectionMode']);
             //handleViews(this, elementProto);
             handleStyle(this, elementProto);
 
@@ -184,6 +185,7 @@ Component.prototype = {
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.fire('initialized');
     },
+
     /* configuration methods */
     addView: function(viewTpl, viewName) {
         this.views[viewName || 'index'] = viewTpl + '';
@@ -231,7 +233,6 @@ Component.prototype = {
 
         return templateEngine.renderView(viewId, data, options);
     },
-    // Styles
 
     /* created / attached cycle methods */
     createdCallback: function(element) {
@@ -264,20 +265,6 @@ Component.prototype = {
         if (typeof element.initialize === 'function') {
             return element.initialize();
         }
-        /* if element implement initialize, then wait unit it done */
-        /*if (typeof element.initialize === 'function') {
-            var _initialize = element.initialize;
-            element.setAttribute('unresolved', '');
-            return new Promise(function(resolve) {
-                element.initialize = function() {
-                    resolve(_initialize.apply(element, arguments));
-                };
-            }).then(function(result) {
-                element.removeAttribute('unresolved');
-                element.initialize = _initialize;
-                return result;
-            });
-        }*/
     },
     handleElement: function(element) {
         return Promise.resolve()
