@@ -352,7 +352,7 @@ if (typeof exports === 'object') {
 
 })(this);
 
-;(function(window) {
+(function() {
 'use strict';
 
 /*
@@ -546,7 +546,8 @@ if (window.require) {
 Flipper.registerLoader = registerLoader;
 Flipper.getLoader = getLoader;
 
-var dataCenter = {};
+var dataCenter = {},
+    dataCenterUsage = {};
 
 var uniqueId = 0;
 function getUnqiueId() {
@@ -556,7 +557,8 @@ function getUnqiueId() {
 
 function requestModelSpace(model) {
     var spaceId = getUnqiueId();
-    dataCenter[spaceId] = model || {};
+    dataCenter[spaceId] = model;
+    dataCenterUsage[spaceId] = 0;
     return spaceId;
 }
 
@@ -565,14 +567,36 @@ function getModelSpace(spaceId) {
 }
 
 function removeModelSpace(spaceId) {
-    delete dataCenter[spaceId];
+    if (spaceId && dataCenter[spaceId] !== undefined) {
+        delete dataCenter[spaceId];
+        delete dataCenterUsage[spaceId];
+    }
 }
 
-Flipper.requestModelSpace = requestModelSpace;
-Flipper.getModelSpace = getModelSpace;
-Flipper.removeModelSpace = removeModelSpace;
+function linkModelSpace(spaceId) {
+    if (dataCenterUsage[spaceId] !== undefined) {
+        dataCenterUsage[spaceId] += 1;
+    }
+}
 
-window._dataCenter = dataCenter;
+function unlinkModelSpace(spaceId) {
+    if (dataCenterUsage[spaceId] !== undefined) {
+        dataCenterUsage[spaceId] -= 1;
+
+        if (dataCenterUsage[spaceId] <= 0) {
+            removeModelSpace(spaceId);
+        }
+    }
+}
+
+Flipper.dataCenter = {
+    _warehouse:   dataCenter,
+    requestSpace: requestModelSpace,
+    removeSpace:  removeModelSpace,
+    getSpace:     getModelSpace,
+    linkSpace:    linkModelSpace,
+    unlinkSpace:  unlinkModelSpace
+};
 
 var COMPONENT_STATUS = {
     // ERROR: -1,
@@ -646,12 +670,12 @@ function createElementProto(component) {
     }
     Object.defineProperties(elementProto, {
         model: {
-            get: function() {
-                return component.model;
-            },
-            set: function(value) {
-                component.model = value;
-            }
+            value: undefined,
+            writable: true
+        },
+        modelId: {
+            value: '',
+            writable: true
         },
         getView: {
             value: component.getView.bind(component)
@@ -739,7 +763,8 @@ Component.prototype = {
 
         if (elementProto) {
             mixinElementProto(this, elementProto);
-            hoistAttributes(this, elementProto, ['templateEngine', 'injectionMode']);
+            hoistAttributes(this, elementProto, [
+                'templateEngine', 'injectionMode']);
             //handleViews(this, elementProto);
             handleStyle(this, elementProto);
 
@@ -760,6 +785,7 @@ Component.prototype = {
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.fire('initialized');
     },
+
     /* configuration methods */
     addView: function(viewTpl, viewName) {
         this.views[viewName || 'index'] = viewTpl + '';
@@ -807,7 +833,6 @@ Component.prototype = {
 
         return templateEngine.renderView(viewId, data, options);
     },
-    // Styles
 
     /* created / attached cycle methods */
     createdCallback: function(element) {
@@ -840,20 +865,6 @@ Component.prototype = {
         if (typeof element.initialize === 'function') {
             return element.initialize();
         }
-        /* if element implement initialize, then wait unit it done */
-        /*if (typeof element.initialize === 'function') {
-            var _initialize = element.initialize;
-            element.setAttribute('unresolved', '');
-            return new Promise(function(resolve) {
-                element.initialize = function() {
-                    resolve(_initialize.apply(element, arguments));
-                };
-            }).then(function(result) {
-                element.removeAttribute('unresolved');
-                element.initialize = _initialize;
-                return result;
-            });
-        }*/
     },
     handleElement: function(element) {
         return Promise.resolve()
@@ -863,20 +874,32 @@ Component.prototype = {
             .then(this.bindEvent.bind(this, element));
     },
     fetchModel: function(element) {
-        var self = this, result;
+        var result, modelId;
+
         if (typeof element.fetch === 'function') {
+            modelId = '';
             result = element.fetch();
-            if (utils.isPromise(result)) {
-                result = result.then(function(data) {
-                    self.model = data;
-                });
-            } else if (typeof result === 'object') {
-                self.model = result;
-            }
         } else if (element.hasAttribute('model-id')) {
-            element.model = Flipper.getModelSpace(element.getAttribute('model-id'));
+            modelId = element.getAttribute('model-id');
+            result = Flipper.dataCenter.getSpace(modelId);
         }
-        return result;
+
+        return Promise.resolve(result).then(function(model) {
+            if (model === undefined) {
+                return;
+            }
+
+            element.model = model;
+
+            /* if the model not registered then register it */
+            if (!modelId) {
+                modelId = Flipper.dataCenter.requestSpace(model);
+            }
+
+            /* add one link */
+            Flipper.dataCenter.linkSpace(modelId);
+            element.modelId = modelId;
+        });
     },
 
     /* refersh flow */
@@ -944,6 +967,12 @@ Component.prototype = {
     destroy: function(element) {
         if (typeof element.destroy === 'function') {
             element.destroy();
+        }
+
+        if (element.modelId) {
+            Flipper.dataCenter.unlinkSpace(element.modelId);
+            element.modelId = undefined;
+            element.model = undefined;
         }
     },
 
@@ -1116,6 +1145,8 @@ document.registerElement('web-component', {
     })
 });
 
+Flipper.define = Flipper.register;
+
 Flipper.components = components;
 
 var packages = {};
@@ -1186,4 +1217,4 @@ if (window.KISSY && typeof window.KISSY.add === 'function') {
     window.Flipper = definition();
 }
 
-}(this));
+}());

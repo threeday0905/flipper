@@ -51,6 +51,10 @@ define('xtemplate', function() {
             return key ? element.getAttribute(key) : key;
         };
 
+        commands.modelId = function() {
+            return element.modelId || '';
+        };
+
         option.commands = commands;
 
         return compiledView.render(data, option);
