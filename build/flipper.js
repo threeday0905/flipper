@@ -921,9 +921,16 @@ Component.prototype = {
         }
     },
     renderHTML: function(element, model) {
-        var viewName = 'index';
+        var viewName = 'index',
+            commands = element.tplCommands;
+
+        if (typeof commands === 'function') {
+            commands = commands.call(element);
+        }
+
         return this.renderView(viewName, model, {
-            element: element
+            element:  element,
+            commands: commands
         });
     },
     createTree: function(element, html) {
@@ -999,11 +1006,11 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            /*console.log('component ' + name + ' is initializing automatically' +
+            console.log('component ' + name + ' is initializing automatically' +
                 ', forgot noscript attribute? ');
-            component.initialize();*/
+            component.initialize();
 
-        }, 1000);
+        }, 10000);
         component.on('initialized', function() {
             clearTimeout(timer);
         });

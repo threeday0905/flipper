@@ -13,11 +13,11 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            /*console.log('component ' + name + ' is initializing automatically' +
+            console.log('component ' + name + ' is initializing automatically' +
                 ', forgot noscript attribute? ');
-            component.initialize();*/
+            component.initialize();
 
-        }, 1000);
+        }, 10000);
         component.on('initialized', function() {
             clearTimeout(timer);
         });

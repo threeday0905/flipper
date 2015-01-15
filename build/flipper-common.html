@@ -40,14 +40,19 @@ define('xtemplate', function() {
         }
     }
 
-    function renderView(viewContent, data, option) {
-        var viewId = option.viewId,
-            element = option.element,
+    function requestSpace(scope) {
+        var data = scope.getData();
+        return Flipper.dataCenter.requestSpace(data);
+    }
+
+    function renderView(viewContent, data, options) {
+        var viewId = options.viewId,
+            element = options.element,
             compiledView = compileView(viewId, viewContent);
 
-        var commands = option.commands || {};
-        commands.attr = function(scope, option) {
-            var key = option.params && option.params[0];
+        var commands = options.commands || {};
+        commands.attr = function(scope, options) {
+            var key = options.params && options.params[0];
             return key ? element.getAttribute(key) : key;
         };
 
@@ -55,9 +60,21 @@ define('xtemplate', function() {
             return element.modelId || '';
         };
 
-        option.commands = commands;
+        commands.requestSpace = requestSpace;
 
-        return compiledView.render(data, option);
+        if (options.commands) {
+            Object.keys(options.commands).forEach(function(key) {
+                if (typeof options.commands[key] === 'function') {
+                    commands[key] = options.commands[key];
+                } else {
+                    console.warn('template command must be a function');
+                }
+            });
+        }
+
+        options.commands = commands;
+
+        return compiledView.render(data, options);
     }
 
     Flipper.registerTemplateEngine('xtpl', {
