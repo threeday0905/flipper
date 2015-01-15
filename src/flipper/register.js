@@ -159,4 +159,6 @@ document.registerElement('web-component', {
     })
 });
 
+Flipper.define = Flipper.register;
+
 Flipper.components = components;
