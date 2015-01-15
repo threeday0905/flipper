@@ -70,12 +70,12 @@ function createElementProto(component) {
     }
     Object.defineProperties(elementProto, {
         model: {
-            get: function() {
-                return component.model;
-            },
-            set: function(value) {
-                component.model = value;
-            }
+            value: undefined,
+            writable: true
+        },
+        modelId: {
+            value: '',
+            writable: true
         },
         getView: {
             value: component.getView.bind(component)
@@ -274,20 +274,32 @@ Component.prototype = {
             .then(this.bindEvent.bind(this, element));
     },
     fetchModel: function(element) {
-        var self = this, result;
+        var result, modelId;
+
         if (typeof element.fetch === 'function') {
+            modelId = '';
             result = element.fetch();
-            if (utils.isPromise(result)) {
-                result = result.then(function(data) {
-                    self.model = data;
-                });
-            } else if (typeof result === 'object') {
-                self.model = result;
-            }
         } else if (element.hasAttribute('model-id')) {
-            element.model = Flipper.getModelSpace(element.getAttribute('model-id'));
+            modelId = element.getAttribute('model-id');
+            result = Flipper.dataCenter.getSpace(modelId);
         }
-        return result;
+
+        return Promise.resolve(result).then(function(model) {
+            if (model === undefined) {
+                return;
+            }
+
+            element.model = model;
+
+            /* if the model not registered then register it */
+            if (!modelId) {
+                modelId = Flipper.dataCenter.requestSpace(model);
+            }
+
+            /* add one link */
+            Flipper.dataCenter.linkSpace(modelId);
+            element.modelId = modelId;
+        });
     },
 
     /* refersh flow */
@@ -355,6 +367,12 @@ Component.prototype = {
     destroy: function(element) {
         if (typeof element.destroy === 'function') {
             element.destroy();
+        }
+
+        if (element.modelId) {
+            Flipper.dataCenter.unlinkSpace(element.modelId);
+            element.modelId = undefined;
+            element.model = undefined;
         }
     },
 
