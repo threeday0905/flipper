@@ -40,8 +40,8 @@ define('xtemplate', function() {
         }
     }
 
-    function requestSpace(scope) {
-        var data = scope.getData();
+    function requestSpace(scope, option) {
+        var data = (option && option.params) ? option.params[0] : undefined;
         return Flipper.dataCenter.requestSpace(data);
     }
 
