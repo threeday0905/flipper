@@ -93,13 +93,17 @@ function createElementProto(component) {
             }
         },
         refresh: {
-            value: function() {
+            value: function(callback) {
                 var element = this;
                 Promise.resolve()
                     .then(component.renderNode.bind(component, element))
                     .then(function() {
                         if (typeof element.ready === 'function') {
                             element.ready();
+                        }
+
+                        if (typeof callback === 'function') {
+                            callback.call(element);
                         }
                     })
                     /*jshint -W024 */
