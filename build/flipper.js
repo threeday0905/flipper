@@ -598,6 +598,9 @@ Flipper.dataCenter = {
     unlinkSpace:  unlinkModelSpace
 };
 
+Flipper.requestSpace = requestModelSpace;
+Flipper.removeSpace  = removeModelSpace;
+
 var COMPONENT_STATUS = {
     // ERROR: -1,
     INITIALIZING: 0,
@@ -615,20 +618,6 @@ function hoistAttributes(component, options, keys) {
     keys.forEach(function(key) {
         if (options[key]) {
             component[key] = options[key];
-        }
-    });
-}
-
-function mixinElementProto(component, elementProto) {
-    var targetProto = component.elementProto;
-
-    Object.getOwnPropertyNames(elementProto).forEach(function(name) {
-        if (name === 'model') {
-            targetProto.model = elementProto.model;
-        } else {
-            Object.defineProperty(targetProto, name,
-                Object.getOwnPropertyDescriptor(elementProto, name)
-            );
         }
     });
 }
@@ -651,7 +640,7 @@ function handleStyle(component, options) {
     }
 }
 
-function catchPromiseError(err) {
+function logError(err) {
     console.log(err);
     if (err.stack) {
         console.log(err.stack);
@@ -659,8 +648,44 @@ function catchPromiseError(err) {
 }
 
 /* Element Prototype */
+var LIFE_EVENTS = [ 'initialize', 'fetch', 'adapt', 'render', 'ready', 'destroy', 'fail'];
+
+function mixinElementProto(component, elementProto) {
+    var targetProto = component.elementProto;
+
+    Object.getOwnPropertyNames(elementProto).forEach(function(name) {
+        if (name === 'model') {
+            targetProto.model = elementProto.model;
+        } else if (LIFE_EVENTS.lastIndexOf(name) > -1 ) {
+            Object.defineProperty(targetProto._lifeCycle, name,
+                Object.getOwnPropertyDescriptor(elementProto, name)
+            );
+        } else {
+            Object.defineProperty(targetProto, name,
+                Object.getOwnPropertyDescriptor(elementProto, name)
+            );
+        }
+    });
+}
+
+function hasLifeCycleEvent(element, methodName) {
+    return typeof element._lifeCycle[methodName] === 'function';
+}
+
+function callLifeCycleEvent(element, methodName, args) {
+    return element._lifeCycle[methodName].apply(element, args);
+}
+
+function tryCallLifeCycleEvent(element, methodName, args) {
+    if (hasLifeCycleEvent(element, methodName)) {
+        return callLifeCycleEvent(element, methodName, args);
+    }
+}
+
 function createElementProto(component) {
     var elementProto = Object.create(HTMLElement.prototype);
+
+    elementProto._lifeCycle = {};
 
     function wrapCallback(key) {
         var callback = component[key];
@@ -694,20 +719,18 @@ function createElementProto(component) {
         },
         refresh: {
             value: function(callback) {
+                /*jshint -W024 */
                 var element = this;
                 Promise.resolve()
+                    .then(component.renderBegin.bind(component, element))
                     .then(component.renderNode.bind(component, element))
+                    .then(component.renderEnd.bind(component, element))
                     .then(function() {
-                        if (typeof element.ready === 'function') {
-                            element.ready();
-                        }
-
                         if (typeof callback === 'function') {
                             callback.call(element);
                         }
                     })
-                    /*jshint -W024 */
-                    .catch(catchPromiseError);
+                    .catch(component.renderFail.bind(component, element));
             }
         },
         createdCallback: {
@@ -744,6 +767,7 @@ function Component(name) {
 
 
 Component.prototype = {
+    /* event */
     on: function(name, fn) {
         if (!this._events) {
             this._events = {};
@@ -762,22 +786,21 @@ Component.prototype = {
             });
         }
     },
+
+    /* initialize */
     prepare: function(elementProto) {
         throwIfAlreadyRegistered(this);
 
         if (elementProto) {
             mixinElementProto(this, elementProto);
-            hoistAttributes(this, elementProto, [
-                'templateEngine', 'injectionMode']);
-            //handleViews(this, elementProto);
-            handleStyle(this, elementProto);
+            hoistAttributes(this, elementProto,
+                ['templateEngine', 'injectionMode', 'definitionEle']
+            );
 
-            if (elementProto.component) {
-                this.component = elementProto.component;
-            }
+            handleViews(this, elementProto);
+            handleStyle(this, elementProto);
         }
     },
-
     initialize: function(elementProto) {
         throwIfAlreadyRegistered(this);
         this.prepare(elementProto);
@@ -797,30 +820,36 @@ Component.prototype = {
     getView: function(viewName) {
         var result;
 
-        if (!viewName || viewName === 'index') {
-            viewName = '';
+        viewName = viewName || 'index';
+
+        if (this.views[viewName]) {
+            result = this.views[viewName];
         }
 
-        $(this.component).find(' > template').each(function() {
-            var $tpl = $(this),
-                id = $tpl.attr('id') || '';
-
-            if (viewName === id) {
-                result = $tpl.html();
+        var setupTplIfIdMatched = function(ele) {
+            if ( (ele.id || 'index') === viewName) {
+                result = ele.innerHTML;
+                return true;
+            } else {
                 return false;
             }
-        });
+        };
 
         if (!result) {
-            $(this.component).find(' > script[type="template"]').each(function() {
-                var $tpl = $(this),
-                    id = $tpl.attr('id') || '';
-
-                if (viewName === id) {
-                    result = $tpl.html();
-                    return false;
-                }
+            $(this.definitionEle).find(' > template').each(function() {
+                return !setupTplIfIdMatched(this);
             });
+
+        }
+
+        if (!result) {
+            $(this.definitionEle).find(' > script[type="template"]').each(function() {
+                return !setupTplIfIdMatched(this);
+            });
+        }
+
+        if (!result && viewName === 'index') {
+            result = ' '; /* index view can ignore */
         }
 
         return result || '';
@@ -840,93 +869,74 @@ Component.prototype = {
 
     /* created / attached cycle methods */
     createdCallback: function(element) {
+        /*jshint -W024 */
         Promise.resolve()
-            .then(function() {
-                element.setAttribute('unresolved', '');
-            })
+            .then(this.renderBegin.bind(this, element))
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
-            .then(function() {
-                if (typeof element.ready === 'function') {
-                    element.ready();
-                }
-            })
-            .then(function() {
-                element.removeAttribute('unresolved');
-            })
-            /*jshint -W024 */
-            .catch(catchPromiseError);
+            .then(this.renderEnd.bind(this, element))
+            .catch(this.renderFail.bind(this, element));
 
     },
-    attachedCallback: function() {
-
+    renderBegin: function(element) {
+        element.setAttribute('unresolved', '');
     },
     initElement: function(element) {
-        if (typeof jQuery === 'function') {
-            element.$ = jQuery(element);
-        }
-
-        if (typeof element.initialize === 'function') {
-            return element.initialize();
-        }
+        return tryCallLifeCycleEvent(element, 'initialize');
     },
     handleElement: function(element) {
         return Promise.resolve()
             .then(this.fetchModel.bind(this, element))
             .then(this.renderNode.bind(this, element))
-            .then(this.addStyle.bind(this, element))
-            .then(this.bindEvent.bind(this, element));
+            .then(this.addStyle.bind(this, element));
     },
     fetchModel: function(element) {
         var result, modelId;
 
-        if (typeof element.fetch === 'function') {
+        if (hasLifeCycleEvent(element, 'fetch')) {
             modelId = '';
-            result = element.fetch();
+            result = callLifeCycleEvent(element, 'fetch');
         } else if (element.hasAttribute('model-id')) {
             modelId = element.getAttribute('model-id');
             result = Flipper.dataCenter.getSpace(modelId);
         }
 
         return Promise.resolve(result).then(function(model) {
-            if (model === undefined) {
-                return;
+            if (model !== undefined) {
+                element.model = model;
+
+                /* if the model not registered then register it */
+                if (!modelId) {
+                    modelId = Flipper.dataCenter.requestSpace(model);
+                }
+
+                /* add one link */
+                Flipper.dataCenter.linkSpace(modelId);
+                element.modelId = modelId;
             }
-
-            element.model = model;
-
-            /* if the model not registered then register it */
-            if (!modelId) {
-                modelId = Flipper.dataCenter.requestSpace(model);
-            }
-
-            /* add one link */
-            Flipper.dataCenter.linkSpace(modelId);
-            element.modelId = modelId;
         });
     },
-
-    /* refersh flow */
     renderNode: function(element) {
-        if (typeof element.render === 'function') {
-            return element.render();
+        if (hasLifeCycleEvent(element, 'render')) {
+            return callLifeCycleEvent(element, 'render');
+        } else {
+            return Promise.resolve()
+                .then(this.formatModel.bind(this, element))
+                .then(this.renderHTML.bind(this, element))
+                .then(this.createTree.bind(this, element));
         }
-
-        return Promise.resolve()
-            .then(this.formatModel.bind(this, element))
-            .then(this.renderHTML.bind(this, element))
-            .then(this.createTree.bind(this, element));
     },
     formatModel: function(element) {
-        if (typeof element.formatModel === 'function') {
-            return element.formatModel();
+        /* must return model, it will be dispatched to renderHTML method */
+        if (hasLifeCycleEvent(element, 'adapt')) {
+            return callLifeCycleEvent(element, 'adapt');
         } else {
             return element.model;
         }
     },
     renderHTML: function(element, model) {
         var viewName = 'index',
-            commands = element.tplCommands;
+            commands = element.commands;
 
         if (typeof commands === 'function') {
             commands = commands.call(element);
@@ -945,8 +955,6 @@ Component.prototype = {
 
         target.innerHTML = html;
     },
-
-
     addStyle: function(element) {
         var style = document.createElement('style');
         style.textContent = this.style;
@@ -963,22 +971,26 @@ Component.prototype = {
         }
 
     },
-    bindEvent: function(element) {
-        if (typeof element.bind === 'function') {
-            element.bind();
-        }
+    /* refersh flow */
+    renderFail: function(element, err) {
+        logError(err);
+        return tryCallLifeCycleEvent(element, 'fail', [ err ] );
+    },
+    renderEnd: function(element) {
+        var result = tryCallLifeCycleEvent(element, 'ready');
+
+        return Promise.resolve(result).then(function() {
+            element.removeAttribute('unresolved');
+            $(element).trigger('ready');
+        });
     },
 
     /* detach cycle methods */
     detachedCallback: function(element) {
-        Promise.resolve()
-            .then(this.destroy(element));
-
+        this.destroy(element);
     },
     destroy: function(element) {
-        if (typeof element.destroy === 'function') {
-            element.destroy();
-        }
+        tryCallLifeCycleEvent(element, 'destroy');
 
         if (element.modelId) {
             Flipper.dataCenter.unlinkSpace(element.modelId);
@@ -988,6 +1000,9 @@ Component.prototype = {
     },
 
     /* attribute changed callback */
+    attachedCallback: function() {
+
+    },
     attributeChangedCallback: function(element, args) {
         /*if (typeof this.elementProto.attributeChangedCallback === 'function') {
             this.elementProto._attributeChangedCallback.apply(element, args);
@@ -1141,7 +1156,7 @@ document.registerElement('web-component', {
                 name = this.getAttribute('name');
 
                 options = {
-                    component: this,
+                    definitionEle: this,
                     //views: collectViews(this),
                     style: collectStyle(this),
 
