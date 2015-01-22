@@ -641,14 +641,19 @@ function handleStyle(component, options) {
 }
 
 function logError(err) {
-    console.log(err);
-    if (err.stack) {
-        console.log(err.stack);
-    }
+    console.error(err.stack || err);
 }
 
 /* Element Prototype */
-var LIFE_EVENTS = [ 'initialize', 'fetch', 'adapt', 'render', 'ready', 'destroy', 'fail'];
+var LIFE_EVENTS = [
+    'initialize',
+    'fetch',
+    'adapt',
+    'render',
+    'ready',
+    'destroy',
+    'fail'
+];
 
 function mixinElementProto(component, elementProto) {
     var targetProto = component.elementProto;
@@ -763,6 +768,8 @@ function Component(name) {
     this.model = {};
     this.views = {};
     this.style = '';
+
+    this.helpers = {};
 }
 
 
@@ -794,7 +801,7 @@ Component.prototype = {
         if (elementProto) {
             mixinElementProto(this, elementProto);
             hoistAttributes(this, elementProto,
-                ['templateEngine', 'injectionMode', 'definitionEle']
+                [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers' ]
             );
 
             handleViews(this, elementProto);
@@ -1003,12 +1010,22 @@ Component.prototype = {
     attachedCallback: function() {
 
     },
-    attributeChangedCallback: function(element, args) {
+    attributeChangedCallback: function(/*element, args*/) {
         /*if (typeof this.elementProto.attributeChangedCallback === 'function') {
             this.elementProto._attributeChangedCallback.apply(element, args);
         }*/
+    },
+
+    /* helpers */
+    setHelpers: function(helpers) {
+        this.helpers = helpers;
+    },
+    getHelpers: function() {
+        return this.helpers;
     }
 };
+
+Flipper.Component = Component;
 
 var components = {};
 
@@ -1017,7 +1034,7 @@ function createComponent(name, elementProto, needToWait) {
         throw new Error('component ' + name + ' is already registered');
     }
 
-    var component = components[name] = new Component(name);
+    var component = components[name] = new Flipper.Component(name);
 
     component.prepare(elementProto);
 
@@ -1025,11 +1042,12 @@ function createComponent(name, elementProto, needToWait) {
         component.initialize();
     } else {
         var timer = setTimeout(function() {
-            console.log('component ' + name + ' is initializing automatically' +
-                ', forgot noscript attribute? ');
             component.initialize();
+            throw new Error('component ' + name + ' is initializing automatically' +
+                ', forgot [noscript] attribute? ');
 
         }, 10000);
+
         component.on('initialized', function() {
             clearTimeout(timer);
         });
@@ -1038,16 +1056,16 @@ function createComponent(name, elementProto, needToWait) {
     return component;
 }
 
-function initializeComponent(name, options) {
+function initializeComponent(name, elementProto) {
     /* if the component is not exists, then create it */
     var component = components[name];
 
     if (!component) {
-        components = createComponent(name, options, true);
+        component = createComponent(name, {}, true);
     }
 
     /* it will throw error, if already initialized */
-    component.initialize(options);
+    component.initialize(elementProto);
 }
 
 function tryGetBaseUriByScript() {
@@ -1101,23 +1119,23 @@ Flipper.register = function(name, dependencies, elementProto) {
             }
         });
         require(dependencies, function() {
-            if (typeof elementProto === 'object') {
-                initializeComponent(name, elementProto);
-            } else if (typeof elementProto === 'function') {
-                initializeComponent(name, elementProto.apply(elementProto, arguments));
+            if (typeof elementProto === 'function') {
+                elementProto = elementProto.apply(elementProto, arguments);
             }
+
+            initializeComponent(name, elementProto);
         });
     }
 };
 
-function collectViews(node) {
+/*function collectViews(node) {
     var views = {};
     $(node).find(' > template').each(function() {
         var $tpl = $(this);
         views[ $tpl.attr('id') || '' ] = $tpl.html();
     });
     return views;
-}
+}*/
 
 function collectStyle(node) {
     var $node   = $(node),
@@ -1128,7 +1146,7 @@ function collectStyle(node) {
     function extractStyleSheet() {
         var $links = $node.find(' > link[rel="stylesheets"]');
         $links.each(function() {
-            var href = new URL($(this).getAttribute('href', baseURI));
+            var href = new URL(this.getAttribute('href', baseURI));
             style += '@import "' + href + '";';
         }).remove();
 
@@ -1151,13 +1169,12 @@ document.registerElement('web-component', {
         createdCallback: {
             value: function() {
 
-                var name, options, needToWait = true;
+                var name, options, needToWait;
 
                 name = this.getAttribute('name');
 
                 options = {
                     definitionEle: this,
-                    //views: collectViews(this),
                     style: collectStyle(this),
 
                     templateEngine: this.getAttribute('template-engine'),
@@ -1171,8 +1188,17 @@ document.registerElement('web-component', {
     })
 });
 
-Flipper.define = Flipper.register;
+Flipper.getComponent = function getComponent(name) {
+    return components[name];
+};
 
+Flipper.getComponentHelpers = function getComponentHelpers(name) {
+    var component = components[name];
+
+    return component ? component.getHelpers() : {};
+};
+
+Flipper.define = Flipper.register;
 Flipper.components = components;
 
 var packages = {};

@@ -38,14 +38,19 @@ function handleStyle(component, options) {
 }
 
 function logError(err) {
-    console.log(err);
-    if (err.stack) {
-        console.log(err.stack);
-    }
+    console.error(err.stack || err);
 }
 
 /* Element Prototype */
-var LIFE_EVENTS = [ 'initialize', 'fetch', 'adapt', 'render', 'ready', 'destroy', 'fail'];
+var LIFE_EVENTS = [
+    'initialize',
+    'fetch',
+    'adapt',
+    'render',
+    'ready',
+    'destroy',
+    'fail'
+];
 
 function mixinElementProto(component, elementProto) {
     var targetProto = component.elementProto;
@@ -160,6 +165,8 @@ function Component(name) {
     this.model = {};
     this.views = {};
     this.style = '';
+
+    this.helpers = {};
 }
 
 
@@ -191,7 +198,7 @@ Component.prototype = {
         if (elementProto) {
             mixinElementProto(this, elementProto);
             hoistAttributes(this, elementProto,
-                ['templateEngine', 'injectionMode', 'definitionEle']
+                [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers' ]
             );
 
             handleViews(this, elementProto);
@@ -400,9 +407,19 @@ Component.prototype = {
     attachedCallback: function() {
 
     },
-    attributeChangedCallback: function(element, args) {
+    attributeChangedCallback: function(/*element, args*/) {
         /*if (typeof this.elementProto.attributeChangedCallback === 'function') {
             this.elementProto._attributeChangedCallback.apply(element, args);
         }*/
+    },
+
+    /* helpers */
+    setHelpers: function(helpers) {
+        this.helpers = helpers;
+    },
+    getHelpers: function() {
+        return this.helpers;
     }
 };
+
+Flipper.Component = Component;
