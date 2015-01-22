@@ -144,7 +144,7 @@ document.registerElement('web-component', {
                 name = this.getAttribute('name');
 
                 options = {
-                    component: this,
+                    definitionEle: this,
                     //views: collectViews(this),
                     style: collectStyle(this),
 
