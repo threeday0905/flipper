@@ -49,3 +49,6 @@ Flipper.dataCenter = {
     linkSpace:    linkModelSpace,
     unlinkSpace:  unlinkModelSpace
 };
+
+Flipper.requestSpace = requestModelSpace;
+Flipper.removeSpace  = removeModelSpace;
