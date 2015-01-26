@@ -19,10 +19,8 @@
     "tests"
   ],
   "dependencies": {
-    "angular": "1.2.8",
     "args-expect": "~0.2.2",
     "bootstrap": "3.3.2",
-    "echarts": "~2.1.10",
     "jquery": "~2.1.1",
     "modulex": "~1.7.4",
     "polymer": "~0.5.2",
