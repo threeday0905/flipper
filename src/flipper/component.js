@@ -393,7 +393,7 @@ Component.prototype = {
     formatModel: function(element) {
         /* must return model, it will be dispatched to renderHTML method */
         if (hasLifeCycleEvent(element, 'adapt')) {
-            return callLifeCycleEvent(element, 'adapt');
+            return callLifeCycleEvent(element, 'adapt', element.model);
         } else {
             return element.model;
         }
