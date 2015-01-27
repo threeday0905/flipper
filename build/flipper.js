@@ -364,20 +364,49 @@ if (typeof exports === 'object') {
     - web components
  */
 
- var currentScriptDescriptor = {
-   get: function() {
-     var script = document.currentScript ||
-         // NOTE: only works when called in synchronously executing code.
-         // readyState should check if `loading` but IE10 is
-         // interactive when scripts run so we cheat.
-         (document.readyState !== 'complete' ?
-         document.scripts[document.scripts.length - 1] : null);
-     return script;
-   },
-   configurable: true
- };
+var currentScriptDescriptor = {
+    get: function() {
+        var script = document.currentScript ||
+            // NOTE: only works when called in synchronously executing code.
+            // readyState should check if `loading` but IE10 is
+            // interactive when scripts run so we cheat.
+            (document.readyState !== 'complete' ?
+                document.scripts[document.scripts.length - 1] : null);
+        return script;
+    },
+    configurable: true
+};
 
- Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+
+if (!String.prototype.startsWith) {
+    Object.defineProperty(String.prototype, 'startsWith', {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: function(searchString, position) {
+            position = position || 0;
+            return this.lastIndexOf(searchString, position) === position;
+        }
+    });
+}
+
+if (!String.prototype.endsWith) {
+    Object.defineProperty(String.prototype, 'endsWith', {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: function(searchString, position) {
+            var subjectString = this.toString();
+            if (position === undefined || position > subjectString.length) {
+                position = subjectString.length;
+            }
+            position -= searchString.length;
+            var lastIndex = subjectString.indexOf(searchString, position);
+            return lastIndex !== -1 && lastIndex === position;
+        }
+    });
+}
 
 var configs = {
     templateEngine: 'default',
@@ -622,6 +651,28 @@ function hoistAttributes(component, options, keys) {
     });
 }
 
+function hoistWatchers(component, options) {
+    var watchers = component.watchers;
+
+    var suffix = 'Changed';
+
+    function parseCamel(str) {
+        var result = str.replace(/([A-Z])/g, function(mat) {
+            return '-' + mat.toLowerCase();
+        });
+
+        return result.charAt(0) === '-' ? result.substr(1) : result;
+    }
+
+    Object.keys(options).forEach(function(key) {
+        /* endsWith method is polyfill by Flipper */
+        if (key.endsWith(suffix) && typeof options[key] === 'function') {
+            var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
+            watchers[attrName] = key;
+        }
+    });
+}
+
 function handleViews(component, options) {
     if (options.view) {
         component.addView(options.view, 'index');
@@ -655,6 +706,10 @@ var LIFE_EVENTS = [
     'fail'
 ];
 
+var PUBLIC_LIFE_EVENTS = [
+    'fetch', 'adapt', 'render'
+];
+
 function mixinElementProto(component, elementProto) {
     var targetProto = component.elementProto;
 
@@ -665,6 +720,11 @@ function mixinElementProto(component, elementProto) {
             Object.defineProperty(targetProto._lifeCycle, name,
                 Object.getOwnPropertyDescriptor(elementProto, name)
             );
+            if (PUBLIC_LIFE_EVENTS.lastIndexOf(name) > -1 ) {
+                Object.defineProperty(targetProto, name,
+                    Object.getOwnPropertyDescriptor(elementProto, name)
+                );
+            }
         } else {
             Object.defineProperty(targetProto, name,
                 Object.getOwnPropertyDescriptor(elementProto, name)
@@ -723,19 +783,43 @@ function createElementProto(component) {
             }
         },
         refresh: {
-            value: function(callback) {
+            value: function(refetchOrNewModel, callback) {
                 /*jshint -W024 */
+
+                var refetch = false, model;
+
+                if (typeof refetchOrNewModel === 'function') {
+                    callback = refetchOrNewModel;
+                } else if (refetchOrNewModel === true) {
+                    refetch = true;
+                } else if (typeof refetchOrNewModel === 'object') {
+                    model = refetchOrNewModel;
+                }
+
+                if (typeof callback !== 'function') {
+                    callback = function() {};
+                }
+
                 var element = this;
-                Promise.resolve()
-                    .then(component.renderBegin.bind(component, element))
-                    .then(component.renderNode.bind(component, element))
-                    .then(component.renderEnd.bind(component, element))
-                    .then(function() {
-                        if (typeof callback === 'function') {
-                            callback.call(element);
-                        }
-                    })
-                    .catch(component.renderFail.bind(component, element));
+
+                function handleRefresh() {
+                    if (refetch) {
+                        return component.handleElement(element);
+                    } else  if (model) {
+                        return component.fetchModel(element, model).then(function() {
+                            return component.renderNode(element);
+                        });
+                    } else {
+                        return component.renderNode(element);
+                    }
+                }
+
+                return Promise.resolve()
+                        .then(component.renderBegin.bind(component, element))
+                        .then(handleRefresh)
+                        .then(component.renderEnd.bind(component, element))
+                        .then(callback.bind(element))
+                        .catch(component.renderFail.bind(component, element));
             }
         },
         createdCallback: {
@@ -770,6 +854,7 @@ function Component(name) {
     this.style = '';
 
     this.helpers = {};
+    this.watchers = {};
 }
 
 
@@ -804,6 +889,8 @@ Component.prototype = {
                 [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers' ]
             );
 
+            hoistWatchers(this, elementProto);
+
             handleViews(this, elementProto);
             handleStyle(this, elementProto);
         }
@@ -811,7 +898,6 @@ Component.prototype = {
     initialize: function(elementProto) {
         throwIfAlreadyRegistered(this);
         this.prepare(elementProto);
-
         document.registerElement(this.name, {
             prototype: this.elementProto
         });
@@ -882,7 +968,8 @@ Component.prototype = {
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
             .then(this.renderEnd.bind(this, element))
-            .catch(this.renderFail.bind(this, element));
+            .catch(this.renderFail.bind(this, element))
+            .then(this.addStyle.bind(this, element));
 
     },
     renderBegin: function(element) {
@@ -894,13 +981,15 @@ Component.prototype = {
     handleElement: function(element) {
         return Promise.resolve()
             .then(this.fetchModel.bind(this, element))
-            .then(this.renderNode.bind(this, element))
-            .then(this.addStyle.bind(this, element));
+            .then(this.renderNode.bind(this, element));
     },
-    fetchModel: function(element) {
+    fetchModel: function(element, model) {
         var result, modelId;
 
-        if (hasLifeCycleEvent(element, 'fetch')) {
+        if (model) {
+            modelId = '';
+            result = model;
+        } else if (hasLifeCycleEvent(element, 'fetch')) {
             modelId = '';
             result = callLifeCycleEvent(element, 'fetch');
         } else if (element.hasAttribute('model-id')) {
@@ -1010,10 +1099,23 @@ Component.prototype = {
     attachedCallback: function() {
 
     },
-    attributeChangedCallback: function(/*element, args*/) {
-        /*if (typeof this.elementProto.attributeChangedCallback === 'function') {
-            this.elementProto._attributeChangedCallback.apply(element, args);
-        }*/
+    attributeChangedCallback: function(element, args) {
+        var watchers, attrName, changedCallback;
+        if (typeof element.attributeChanged === 'function') {
+            element.attributeChanged.apply(element, args);
+        } else {
+            watchers = this.watchers;
+            attrName = args[0];
+
+            if (watchers[attrName]) {
+                changedCallback = element[watchers[attrName]];
+                if (typeof changedCallback === 'function') {
+                    changedCallback.apply(element,
+                        Array.prototype.slice.call(args, 1)
+                    );
+                }
+            }
+        }
     },
 
     /* helpers */
