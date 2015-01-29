@@ -14,6 +14,9 @@
         "./flipper/exports.js",
         "./outro.snippet"
     ],
+    "flipper-polyfill.js": [
+        "./polyfill/index.js"
+    ],
     /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
     ],
