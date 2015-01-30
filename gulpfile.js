@@ -6,6 +6,8 @@ var fs      = require('fs'),
     perrier = require('perrier'),
     concat  = require('gulp-concat');
 
+var chinese2unicode = require('fd-gulp-chinese2unicode');
+
 var srcFolder  = path.resolve(__dirname, './src'),
     destFolder = path.resolve(__dirname, './build'),
     buildTasks;
@@ -68,5 +70,12 @@ buildTasks.forEach(function(task) {
     buildTasks.watchQueue.push(watchTaskName);
 });
 
-gulp.task('build', buildTasks.buildQueue);
+gulp.task('build', buildTasks.buildQueue, function(cb) {
+    setTimeout(function() {
+        gulp.src('./build/flipper-polyfill.js')
+            .pipe(chinese2unicode())
+            .pipe(gulp.dest('./build/'));
+        cb();
+    }, 1000);
+});
 gulp.task('default', [ 'build' ].concat(buildTasks.watchQueue));
