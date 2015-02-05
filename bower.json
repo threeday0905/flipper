@@ -24,6 +24,6 @@
     "jquery": "~2.1.1",
     "modulex": "~1.7.4",
     "polymer": "~0.5.2",
-    "xtemplate": "~3.7.1"
+    "xtemplate": "xtemplate/xtemplate#~4.1.3"
   }
 }
