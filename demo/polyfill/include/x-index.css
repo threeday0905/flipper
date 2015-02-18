@@ -1,0 +1,6 @@
+x-hello {
+    display: inline-block;
+    border: 1px solid #333;
+    padding: 5px;
+    margin: 0 15px 15px 0;
+}

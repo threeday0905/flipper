@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Polyfill Lab - Custom Elements</title>
+
+    <script src="../../build/modules/webcomponentsjs/CustomElements.js"></script>
+    <script src="../../build/modules/jquery/jquery.js"></script>
+    <script src="../../build/flipper.js"></script>
+
+    <style>
+        x-hello {
+            display: inline-block;
+            border: 1px solid #333;
+            padding: 5px;
+            margin-right: 12px;
+        }
+    </style>
+</head>
+
+<body>
+    <button id="add">Add New</button>
+    <hr>
+    <div id="container">
+        <x-hello></x-hello>
+    </div>
+
+    <script>
+        Flipper.register('x-hello', {
+            ready: function() {
+                var title = this.getAttribute('title') || 'World';
+                this.innerHTML = 'Hello ' + title + '!';
+            }
+        });
+
+        document.getElementById('add').addEventListener('click', function() {
+            var ele = document.createElement('x-hello');
+            ele.setAttribute('title', 'New One');
+
+            document.getElementById('container').appendChild(ele);
+        }, false);
+
+    </script>
+</body>
+
+</html>

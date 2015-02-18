@@ -1,0 +1,9 @@
+<link rel="stylesheet" href="./x-index.css">
+<script>
+    Flipper.register('x-hello', {
+        ready: function() {
+            var title = this.getAttribute('title') || 'World';
+            this.innerHTML = 'Hello ' + title + '!';
+        }
+    });
+</script>

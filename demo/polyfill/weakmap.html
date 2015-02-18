@@ -1,0 +1,31 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Digo - Dashboard Demo</title>
+
+    <meta charset="utf-8">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <!-- include flipper.js, jquery & bootstrap, (or angular) -->
+    <link rel="import" href="../../build/flipper-common.html">
+
+</head>
+
+<body>
+
+    <script>
+        var wm1 = new WeakMap();
+
+        var o1 = {};
+        debugger;
+        wm1.set(o1, 37);
+
+        var result = wm1.get(o1);
+
+        console.log('result', result);
+    </script>
+</body>
+
+</html>

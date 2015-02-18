@@ -1,0 +1,15 @@
+<style>
+    x-world {
+        display: inline-block;
+        border: 1px solid red;
+        padding: 5px;
+        margin: 0 15px 15px 0;
+    }
+</style>
+
+<script>
+    Flipper.register('x-world', {
+        view: 'Hello {{attr ("title") }}!',
+        templateEngine: 'xtpl'
+    });
+</script>
