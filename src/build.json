@@ -1,6 +1,6 @@
 {
     "flipper.js": [
-        "../bower_components/args-expect/lib/args-expect.js",
+        "../build/modules/args-expect/args-expect.js",
         "./intro.snippet",
         "./flipper/polyfill.js",
         "./flipper/root.js",
@@ -14,9 +14,17 @@
         "./flipper/exports.js",
         "./outro.snippet"
     ],
-    "flipper-polyfill.js": [
-        "./polyfill/index.js"
+    "flipper-plugin-xtpl.js": [
+        "../build/modules/xtemplate/xtemplate-standalone.js",
+        "./intro.snippet",
+        "./plugins/render-xtpl.js",
+        "./outro.snippet"
     ],
+    "flipper-polyfill.js": [
+        "./intro.snippet",
+        "./polyfill/index.js",
+        "./outro.snippet"
+    ]
     /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
     ],
