@@ -1,10 +1,10 @@
 {
   "name": "flipper",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "authors": [
     "Herman Lee <threeday0905@gmail.com>"
   ],
-  "description": "Web-component solutions",
+  "description": "another web-component solutions",
   "main": "build/index.js",
   "keywords": [
     "web-components"
