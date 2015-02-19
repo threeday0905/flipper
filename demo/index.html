@@ -8,46 +8,28 @@
     <meta content="IE=edge" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1" name="viewport">
 
-    <!-- include flipper.js, jquery & bootstrap, (or angular) -->
-    <link rel="import" href="../build/flipper.html">
-
-    <script src="../bower_components/angular/angular.js"></script>
-    <script src="../bower_components/echarts/build/dist/echarts-all.js"></script>
+    <link rel="import" href="../build/flipper-common.html">
 </head>
 
 <body>
     <layout-header></layout-header>
 
     <div class="container-fluid">
-        <div class="row">
-            <layout-nav class="col-md-2 sidebar" data-uri="./components/digo/layout-nav/mock.json"></layout-nav>
-            <div class="col-md-10 main">
-                <h1 class="page-header">Dashboard</h1>
-
-                <chart-richtable data-uri="./mock/rich-table.json"></chart-richtable>
-
-                <chart-oops rpt-code="test-rpt=-code"
-                    data-uri="./components/digo/chart-oops/mock.json"
-                    start="[" end="]"
-                ></chart-oops>
-            </div>
-        </div>
+        <h1>Coming Soon</h1>
     </div>
     <layout-footer></layout-footer>
 
     <script>
         Flipper.config('packages', {
-            digo: {
-                base: './components/digo'
+            sample: {
+                base: './components/sample'
             }
         });
 
         Flipper.imports(
-            'digo/chart-oops/',
-            'digo/chart-richtable/',
-            'digo/layout-header/',
-            'digo/layout-footer/',
-            'digo/layout-nav'
+            'sample/layout-header/',
+            'sample/layout-footer/',
+            'sample/layout-nav'
         );
     </script>
 </body>
