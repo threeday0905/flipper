@@ -1,0 +1,50 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Polyfill Lab - HTML Imports</title>
+
+    <script src="../../build/modules/webcomponentsjs/HTMLImports.js"></script>
+    <script src="../../build/modules/webcomponentsjs/CustomElements.js"></script>
+
+    <script src="../../build/modules/jquery/jquery.js"></script>
+    <script src="../../build/modules/xtemplate/xtemplate-standalone-debug.js"></script>
+    <script src="../../build/flipper.js"></script>
+    <script src="../../build/flipper-plugin.js"></script>
+
+    <link rel="stylesheet" href="./include/x-hello.css">
+</head>
+
+<body>
+    <button id="add">Add New</button>
+    <hr>
+    <div id="container">
+        <x-hello title="World"></x-hello>
+    </div>
+
+    <web-component name="x-hello" injection-mode="light-dom" template-engine="xtpl">
+        <script>
+            console.log('element registered');
+            Flipper.register({
+                ready: function() {
+                    var title = this.getAttribute('title') || 'World';
+                    this.innerHTML = 'Hello ' + title + '!';
+                }
+            });
+        </script>
+    </web-component>
+
+    <script>
+        document.addEventListener('HTMLImportsLoaded', function() {
+            console.log('html imports loaded');
+            document.getElementById('add').addEventListener('click', function() {
+                var ele = document.createElement('x-hello');
+                ele.setAttribute('title', 'New One');
+
+                document.getElementById('container').appendChild(ele);
+            }, false);
+        }, false);
+    </script>
+</body>
+
+</html>
