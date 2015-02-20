@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Polyfill Lab - Extend & Is</title>
+
+    <link rel="import" href="../../build/flipper-common.html">
+</head>
+
+<body>
+
+    <new-button>Send</new-button>
+
+    <script>
+    document.registerElement('new-button', {
+        extends: 'button'
+    });
+
+    document.addEventListener('HTMLImportsLoaded', function() {
+
+    }, false);
+    </script>
+</body>
+
+</html>
