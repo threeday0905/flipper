@@ -25,8 +25,6 @@ function getLoader(name) {
 
 if (window.require) {
     registerLoader('default', window.require);
-    utils.requireDebugger('plugin-loader')
-        ('register default loader with window.require');
 }
 
 Flipper.registerLoader = registerLoader;

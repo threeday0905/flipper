@@ -34,17 +34,4 @@ utils.resolveUri = function(target, baseUri) {
     return new URL(target, baseUri).toString();
 };
 
-utils.requireDebugger = function(type) {
-    var DEBUG = typeof window.DEBUG === 'string' ? window.DEBUG : '';
-
-    if (DEBUG === '*' || DEBUG.lastIndexOf(type) > -1 ) {
-        return function() {
-            var msg = utils.format.apply(utils, arguments);
-            console.log('[' + type + ']' + msg);
-        };
-    } else {
-        return utils.noop;
-    }
-};
-
 Flipper.utils = utils;
