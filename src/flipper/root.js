@@ -1,6 +1,7 @@
 var configs = {
     templateEngine: 'default',
-    injectionMode:  'shadow-dom'
+    injectionMode:  'light-dom',
+    declarationTag: 'web-component'
 };
 
 var Flipper = {
