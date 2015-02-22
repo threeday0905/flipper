@@ -362,22 +362,26 @@ if (typeof exports === 'object') {
     - new URL
     - Promise
     - web components
+    - document base uri
  */
 
-var currentScriptDescriptor = {
-    get: function() {
-        var script = document.currentScript ||
-            // NOTE: only works when called in synchronously executing code.
-            // readyState should check if `loading` but IE10 is
-            // interactive when scripts run so we cheat.
-            (document.readyState !== 'complete' ?
-                document.scripts[document.scripts.length - 1] : null);
-        return script;
-    },
-    configurable: true
-};
+/* the _currentScript prop may be already polyfill from webcomponentsjs */
+if (!document._currentScript) {
+    var currentScriptDescriptor = {
+        get: function() {
+            var script = document.currentScript ||
+                // NOTE: only works when called in synchronously executing code.
+                // readyState should check if `loading` but IE10 is
+                // interactive when scripts run so we cheat.
+                (document.readyState !== 'complete' ?
+                    document.scripts[document.scripts.length - 1] : null);
+            return script;
+        },
+        configurable: true
+    };
 
-Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+    Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+}
 
 if (!String.prototype.startsWith) {
     Object.defineProperty(String.prototype, 'startsWith', {
@@ -410,7 +414,8 @@ if (!String.prototype.endsWith) {
 
 var configs = {
     templateEngine: 'default',
-    injectionMode:  'shadow-dom'
+    injectionMode:  'light-dom',
+    declarationTag: 'web-component'
 };
 
 var Flipper = {
@@ -462,19 +467,6 @@ utils.log = function log() {
 
 utils.resolveUri = function(target, baseUri) {
     return new URL(target, baseUri).toString();
-};
-
-utils.requireDebugger = function(type) {
-    var DEBUG = typeof window.DEBUG === 'string' ? window.DEBUG : '';
-
-    if (DEBUG === '*' || DEBUG.lastIndexOf(type) > -1 ) {
-        return function() {
-            var msg = utils.format.apply(utils, arguments);
-            console.log('[' + type + ']' + msg);
-        };
-    } else {
-        return utils.noop;
-    }
 };
 
 Flipper.utils = utils;
@@ -568,8 +560,6 @@ function getLoader(name) {
 
 if (window.require) {
     registerLoader('default', window.require);
-    utils.requireDebugger('plugin-loader')
-        ('register default loader with window.require');
 }
 
 Flipper.registerLoader = registerLoader;
@@ -630,10 +620,100 @@ Flipper.dataCenter = {
 Flipper.requestSpace = requestModelSpace;
 Flipper.removeSpace  = removeModelSpace;
 
+
+function createNonStrictPromise(name) {
+    var temp = {}, promise;
+    promise = new Promise(function(resolve, reject) {
+        temp.name = name || 'none';
+        temp.resolve = resolve;
+        temp.reject = reject;
+    });
+
+    utils.mixin(promise, temp);
+
+    return promise;
+}
+
+
+/**
+ *  element prototype may come from two available dist:
+ *      1. tag: <web-componen>....</web-component>
+ *      2. script: Flipper.register( ... )
+ */
+var PROTO_DIST_COUNT = 2;
+
+function ComponentDefinition() {
+    this.countOfProto = PROTO_DIST_COUNT;
+    this.proto = {};   /* the prototoype of element */
+
+    this.modules = {}; /* dependent modules */
+    this.views = {};   /* external view files */
+
+    this.promises = {
+        proto: createNonStrictPromise('proto'),
+        modules: createNonStrictPromise('modules'),
+        views: createNonStrictPromise('views')
+    };
+
+    this.promiseAll = Promise.all([
+        this.promises.proto,
+        this.promises.modules,
+        this.promises.views
+    ]).then(function() {
+        return this;
+    });
+
+    this.resolveModules();
+    this.resolveViews();
+}
+
+function throwIfAlreadResolved(currentCount, name) {
+    if (currentCount === 0) {
+        throw new Error('component declaration [' + name + '] is already registered');
+    }
+}
+
+function throwIfNotObject(target, name) {
+    if (typeof target !== 'object') {
+        throw new Error('component declaration [' + name + '] has wrong format');
+    }
+}
+
+function goThrowIfIsReady(currentCount, goThrough) {
+    if (currentCount === 0) {
+        goThrough();
+    }
+}
+
+ComponentDefinition.prototype = {
+    ready: function(onFulfillment, onRejection) {
+        return this.promiseAll.then(onFulfillment, onRejection);
+    },
+    mixinProto: function(newProto) {
+        throwIfAlreadResolved(this.countOfProto, 'element prototype');
+        throwIfNotObject(newProto, 'element prototype');
+
+        utils.mixin(this.proto, newProto);
+        this.countOfProto -= 1;
+
+        goThrowIfIsReady(this.countOfProto, this.resolveProto.bind(this));
+    },
+    resolveProto: function() {
+        this.promises.proto.resolve(this.proto);
+    },
+    resolveModules: function() {
+        this.promises.modules.resolve(this.modules);
+    },
+    resolveViews: function() {
+        this.promises.views.resolve(this.views);
+    }
+};
+
+
 var COMPONENT_STATUS = {
-    // ERROR: -1,
-    INITIALIZING: 0,
-    INITIALIZED: 1
+    ERROR: 'ERROR', // -1,
+    INITIALIZING: 'INITIALIZING', //0,
+    INITIALIZED: 'INITIALIZED' //1
 };
 
 /* component helpers */
@@ -845,6 +925,7 @@ function Component(name) {
     this.status = COMPONENT_STATUS.INITIALIZING;
 
     this.elementProto = createElementProto(this);
+    this.definition = new ComponentDefinition();
 
     this.templateEngine = 'default';
     this.injectionMode  = 'shadow-dom';
@@ -855,6 +936,11 @@ function Component(name) {
 
     this.helpers = {};
     this.watchers = {};
+
+    this.definition.ready(
+        this.initialize.bind(this),
+        this.markFailed.bind(this)
+    );
 }
 
 
@@ -880,6 +966,9 @@ Component.prototype = {
     },
 
     /* initialize */
+    isReady: function() {
+        return this.status === COMPONENT_STATUS.INITIALIZED;
+    },
     prepare: function(elementProto) {
         throwIfAlreadyRegistered(this);
 
@@ -895,15 +984,28 @@ Component.prototype = {
             handleStyle(this, elementProto);
         }
     },
-    initialize: function(elementProto) {
+    initialize: function() {
         throwIfAlreadyRegistered(this);
-        this.prepare(elementProto);
+        this.prepare(this.definition.proto);
         document.registerElement(this.name, {
             prototype: this.elementProto
         });
 
         this.status = COMPONENT_STATUS.INITIALIZED;
+        this.definition = null;
+
         this.fire('initialized');
+    },
+    markFailed: function(error) {
+        this.status = COMPONENT_STATUS.ERROR;
+
+        if (typeof error === 'string') {
+            error = new Error(error);
+        }
+
+        if (error) {
+            throw error;
+        }
     },
 
     /* configuration methods */
@@ -1131,106 +1233,84 @@ Flipper.Component = Component;
 
 var components = {};
 
-function createComponent(name, elementProto, needToWait) {
-    if (components[name]) {
-        throw new Error('component ' + name + ' is already registered');
-    }
-
-    var component = components[name] = new Flipper.Component(name);
-
-    component.prepare(elementProto);
-
-    if (!needToWait) {
-        component.initialize();
-    } else {
-        var timer = setTimeout(function() {
-            component.initialize();
-            throw new Error('component ' + name + ' is initializing automatically' +
-                ', forgot [noscript] attribute? ');
-
-        }, 10000);
-
-        component.on('initialized', function() {
-            clearTimeout(timer);
-        });
-    }
-
-    return component;
-}
-
-function initializeComponent(name, elementProto) {
-    /* if the component is not exists, then create it */
+function createComponent(name) {
     var component = components[name];
-
     if (!component) {
-        component = createComponent(name, {}, true);
+        component = components[name] = new Flipper.Component(name);
     }
 
-    /* it will throw error, if already initialized */
-    component.initialize(elementProto);
-}
+    if (component.isReady()) {
+        throw new Error('component ' + component.name + ' is already registered');
+    }
 
-function tryGetBaseUriByScript() {
-    var script = document.__currentScript || document.currentScript;
-    return script.baseURI;
-}
-
-function tryGetNameByScript() {
-    var script = document.__currentScript || document.currentScript,
-        parentNode = script && script.parentNode;
-    return parentNode && parentNode.getAttribute('name') || '';
+    return components[name];
 }
 
 /**
- * use to register new component,
- *     or attach config to exist component which defined from tag
+ *  dom related methods
  */
-Flipper.register = function(name, dependencies, elementProto) {
-    if (Array.isArray(name)) { /* Flipper.register( [ dep1, dep2], { ... } ); */
+
+ function tryGetBaseUri() {
+    // TODO: polyfill if baseURI is not exists
+    return document.baseURI;
+ }
+
+function tryGetBaseUriFromNode(node) {
+    var baseURI = node.ownerDocument ? node.ownerDocument.baseURI : '';
+    return baseURI || tryGetBaseUri();
+}
+
+function tryGetCurrentScript() {
+    /* the current script prop is polyfill from webcomponentsjs */
+    return document._currentScript || document.currentScript;
+}
+
+function tryGetWrapperFromCurrentScript() {
+    var script = tryGetCurrentScript();
+    return script ? script.parentNode : undefined;
+}
+
+function tryGetBaseUriFromCurrentScript() {
+    var script = tryGetCurrentScript();
+    return script ? script.baseURI : tryGetBaseUri();
+}
+
+function tryGetNameFromCurrentScript() {
+    var wrapper = tryGetWrapperFromCurrentScript();
+    return wrapper ? wrapper.getAttribute('name') : '';
+}
+
+/**
+ * register helper
+ */
+function parseFactoryArgs(name, dependencies, elementProto) {
+    /* Flipper.register( [ dep1, dep2], { ... } ); */
+    if (Array.isArray(name)) {
         elementProto = dependencies;
         dependencies = name;
-        name = tryGetNameByScript();
-    } else if (typeof name === 'object') { /* Flipper.register( {...} ); */
+        name = tryGetNameFromCurrentScript();
+
+    /* Flipper.register( { ... } ); */
+    } else if (typeof name === 'object') {
         elementProto = name;
         dependencies = undefined;
-        name = tryGetNameByScript();
+        name = tryGetNameFromCurrentScript();
+
+    /* Flipper.register('xxx', { ... } ); */
     } else if (typeof name === 'string' && !Array.isArray(dependencies)) {
         elementProto = dependencies;
         dependencies = undefined;
     }
+    /* else Flipper.register('xxx', [ dep1, dep2 ], { ... } ); */
 
-    if (!name) {
-        throw new Error('component name could not be inferred.');
-    }
+    return {
+        name: name,
+        dependencies: dependencies,
+        elementProto: elementProto
+    };
+}
 
-    if (!elementProto) {
-        throw new Error('component prototype could not be inferred.');
-    }
-
-
-    /* initialize created component, or create it */
-    if (!dependencies) {
-        initializeComponent(name, elementProto);
-    } else {
-        var baseURI = tryGetBaseUriByScript();
-        dependencies = dependencies.map(function(id) {
-            if (id.charAt(0) === '.') {
-                return utils.resolveUri(id, baseURI);
-            } else {
-                return id;
-            }
-        });
-        require(dependencies, function() {
-            if (typeof elementProto === 'function') {
-                elementProto = elementProto.apply(elementProto, arguments);
-            }
-
-            initializeComponent(name, elementProto);
-        });
-    }
-};
-
-/*function collectViews(node) {
+/*function collectViewsFromNode(node) {
     var views = {};
     $(node).find(' > template').each(function() {
         var $tpl = $(this);
@@ -1239,9 +1319,10 @@ Flipper.register = function(name, dependencies, elementProto) {
     return views;
 }*/
 
-function collectStyle(node) {
+
+function collectStyleFromNode(node) {
     var $node   = $(node),
-        baseURI = node.ownerDocument.baseURI,
+        baseURI = tryGetBaseUriFromNode(node),
         style = '';
 
     // TODO: Copy Attributes, such as
@@ -1253,6 +1334,7 @@ function collectStyle(node) {
         }).remove();
 
     }
+
     function extractStyleElement() {
         var $styles = $node.find(' > style');
         $styles.each(function() {
@@ -1266,29 +1348,160 @@ function collectStyle(node) {
     return style;
 }
 
-document.registerElement('web-component', {
+
+function wakeComponentUpIfTimeout(component) {
+    if (component.isReady()) {
+        return;
+    }
+
+    var timer = setTimeout(function() {
+        if (component.isReady()) {
+            return;
+        }
+
+        component.initialize();
+        throw new Error('component ' + name.name + ' is initialized automatically' +
+            ', forgot [noscript] attribute? ');
+    }, 10000);
+
+    component.on('initialized', function() {
+        clearTimeout(timer);
+    });
+}
+
+/**
+ * register a component
+ */
+ function registerComponent(componentArgs, isStandalone) {
+    var name = componentArgs.name,
+        elementProto = componentArgs.elementProto,
+        dependencies = componentArgs.dependencies;
+
+     if (!name) {
+         throw new Error('component name could not be inferred.');
+     }
+
+     if (!elementProto) {
+         throw new Error('component prototype could not be inferred.');
+     }
+
+
+     /* it will create new component or return pending component */
+     var component = createComponent(name),
+        definition = component.definition;
+
+     function registerElementProto(modules) {
+         if (typeof elementProto === 'function') {
+             elementProto = elementProto.apply(null, modules || []);
+         }
+
+         /* it will throw error if element proto is not an object */
+         definition.mixinProto(elementProto);
+
+         /* if the function is standalone, then mark proto as resolved */
+         if (isStandalone) {
+             definition.resolveProto();
+         }
+     }
+
+     /* initialize created component, or create it */
+     if (!dependencies) {
+         registerElementProto();
+     } else {
+         var baseURI = tryGetBaseUriFromCurrentScript();
+         dependencies = dependencies.map(function(id) {
+             if (id.charAt(0) === '.') {
+                 return utils.resolveUri(id, baseURI);
+             } else {
+                 return id;
+             }
+         });
+         require(dependencies, function() {
+             registerElementProto.call(null, arguments);
+         });
+     }
+
+     /* if this component need to waiting other definition,
+        then setTimeout to init automatically then log error */
+     if (!isStandalone) {
+        wakeComponentUpIfTimeout(component);
+     }
+ }
+
+ /**
+  * register from script, e.g. Flipper.register( 'xxx', ... );
+  */
+function registerFromFactoryScript(name, dependencies, elementProto) {
+    var componentArgs = parseFactoryArgs(name, dependencies, elementProto);
+
+
+    var isStandalone = true,
+        wrapperEle = tryGetWrapperFromCurrentScript(),
+        wrapperTag = wrapperEle ? wrapperEle.tagName.toLowerCase() : '';
+
+    if (wrapperTag === Flipper.configs.declarationTag) {
+        isStandalone = false;
+    }
+
+    /* if call Flipper.register directly without <web-component> tag,
+        then it is standalone,
+        otherwise it should need <web-component> element parsed */
+
+    /* in polyfill, <web-component> will be exeuted after script called */
+    registerComponent(componentArgs, isStandalone);
+}
+
+/**
+ * register from declaration tag, e.g <web-component name="xxx">...</web-component>
+ */
+function registerFromDeclarationTag(ele) {
+    var elementProto, componentArgs;
+
+    elementProto = {
+        definitionEle: ele,
+
+        style: collectStyleFromNode(ele),
+
+        templateEngine: ele.getAttribute('template-engine'),
+        injectionMode:  ele.getAttribute('injection-mode')
+    };
+
+    componentArgs = {
+        name: ele.getAttribute('name'),
+        elementProto: elementProto
+    };
+
+    var isStandalone = false;
+
+    if (ele.hasAttribute('noscript')) {
+        isStandalone = true;
+    }
+
+    /* if the <web-component> has noscript attr,
+        then it is standalone,
+        otherwise it need to wait Flipper.register() called */
+    registerComponent(componentArgs, isStandalone);
+}
+
+
+/**
+ * exports APIs
+ */
+Flipper.define = Flipper.register = registerFromFactoryScript;
+
+document.registerElement(Flipper.configs.declarationTag /* web-component */, {
     prototype: Object.create(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
-
-                var name, options, needToWait;
-
-                name = this.getAttribute('name');
-
-                options = {
-                    definitionEle: this,
-                    style: collectStyle(this),
-
-                    templateEngine: this.getAttribute('template-engine'),
-                    injectionMode:  this.getAttribute('injection-mode')
-                };
-
-                needToWait = !this.hasAttribute('noscript');
-                createComponent(name, options, needToWait);
+                registerFromDeclarationTag(this);
             }
         }
     })
 });
+
+if (window.FlipperPolyfill) {
+    window.FlipperPolyfill.flushDeclaration(Flipper.register.bind(Flipper));
+}
 
 Flipper.getComponent = function getComponent(name) {
     return components[name];
@@ -1300,7 +1513,6 @@ Flipper.getComponentHelpers = function getComponentHelpers(name) {
     return component ? component.getHelpers() : {};
 };
 
-Flipper.define = Flipper.register;
 Flipper.components = components;
 
 var packages = {};
