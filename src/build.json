@@ -8,6 +8,8 @@
         "./flipper/plugin-render.js",
         "./flipper/plugin-loader.js",
         "./flipper/data-center.js",
+        "./flipper/definition.js",
+        "./flipper/element.js",
         "./flipper/component.js",
         "./flipper/register.js",
         "./flipper/helpers.js",
@@ -21,8 +23,10 @@
         "./outro.snippet"
     ],
     "flipper-polyfill.js": [
+        "./polyfill/license.txt",
+        "../build/modules/webcomponentsjs/webcomponents.js",
         "./intro.snippet",
-        "./polyfill/index.js",
+        "./polyfill/stub.js",
         "./outro.snippet"
     ]
     /*"vendor/js/jquery.js": [

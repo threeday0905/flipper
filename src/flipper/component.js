@@ -1,7 +1,7 @@
 var COMPONENT_STATUS = {
-    // ERROR: -1,
-    INITIALIZING: 0,
-    INITIALIZED: 1
+    ERROR: 'ERROR', // -1,
+    INITIALIZING: 'INITIALIZING', //0,
+    INITIALIZED: 'INITIALIZED' //1
 };
 
 /* component helpers */
@@ -213,6 +213,7 @@ function Component(name) {
     this.status = COMPONENT_STATUS.INITIALIZING;
 
     this.elementProto = createElementProto(this);
+    this.definition = new ComponentDefinition();
 
     this.templateEngine = 'default';
     this.injectionMode  = 'shadow-dom';
@@ -223,6 +224,11 @@ function Component(name) {
 
     this.helpers = {};
     this.watchers = {};
+
+    this.definition.ready(
+        this.initialize.bind(this),
+        this.markFailed.bind(this)
+    );
 }
 
 
@@ -248,6 +254,9 @@ Component.prototype = {
     },
 
     /* initialize */
+    isReady: function() {
+        return this.status === COMPONENT_STATUS.INITIALIZED;
+    },
     prepare: function(elementProto) {
         throwIfAlreadyRegistered(this);
 
@@ -263,15 +272,28 @@ Component.prototype = {
             handleStyle(this, elementProto);
         }
     },
-    initialize: function(elementProto) {
+    initialize: function() {
         throwIfAlreadyRegistered(this);
-        this.prepare(elementProto);
+        this.prepare(this.definition.proto);
         document.registerElement(this.name, {
             prototype: this.elementProto
         });
 
         this.status = COMPONENT_STATUS.INITIALIZED;
+        this.definition = null;
+
         this.fire('initialized');
+    },
+    markFailed: function(error) {
+        this.status = COMPONENT_STATUS.ERROR;
+
+        if (typeof error === 'string') {
+            error = new Error(error);
+        }
+
+        if (error) {
+            throw error;
+        }
     },
 
     /* configuration methods */
