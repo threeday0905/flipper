@@ -42,13 +42,13 @@ function hoistWatchers(component, options) {
 }
 
 function handleViews(component, options) {
-    if (options.view) {
-        component.addView(options.view, 'index');
+    if (typeof options.template === 'string') {
+        component.addView(options.template, 'index');
     }
 
-    if (options.views) {
-        Object.keys(options.views).forEach(function(key) {
-            component.addView(options.views[key], key);
+    if (typeof options.template === 'object') {
+        Object.keys(options.template).forEach(function(key) {
+            component.addView(options.template[key], key);
         });
     }
 }
