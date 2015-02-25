@@ -754,13 +754,13 @@ function hoistWatchers(component, options) {
 }
 
 function handleViews(component, options) {
-    if (options.view) {
-        component.addView(options.view, 'index');
+    if (typeof options.template === 'string') {
+        component.addView(options.template, 'index');
     }
 
-    if (options.views) {
-        Object.keys(options.views).forEach(function(key) {
-            component.addView(options.views[key], key);
+    if (typeof options.template === 'object') {
+        Object.keys(options.template).forEach(function(key) {
+            component.addView(options.template[key], key);
         });
     }
 }
@@ -1321,25 +1321,45 @@ function parseFactoryArgs(name, dependencies, elementProto) {
 
 
 function collectStyleFromNode(node) {
-    var $node   = $(node),
-        baseURI = tryGetBaseUriFromNode(node),
+    var baseURI = tryGetBaseUriFromNode(node),
         style = '';
 
     // TODO: Copy Attributes, such as
     function extractStyleSheet() {
-        var $links = $node.find(' > link[rel="stylesheets"]');
-        $links.each(function() {
-            var href = new URL(this.getAttribute('href', baseURI));
-            style += '@import "' + href + '";';
-        }).remove();
+        var ele, i, len, linkEles = [];
 
+        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
+            ele = node.childNodes[i];
+
+            if (ele.tagName && ele.tagName.toLowerCase() === 'link' &&
+                ele.getAttribute('rel') === 'stylesheets') {
+                linkEles.push(ele);
+            }
+        }
+
+        linkEles.forEach(function(ele) {
+            var href = new URL(ele.getAttribute('href', baseURI));
+            style += '@import "' + href + '";';
+            node.removeChild(ele);
+        });
     }
 
     function extractStyleElement() {
-        var $styles = $node.find(' > style');
-        $styles.each(function() {
-            style += $(this).html();
-        }).remove();
+        var ele, i, len, styleEles = [];
+
+        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
+            ele = node.childNodes[i];
+
+            if (ele.tagName && ele.tagName.toLowerCase() === 'style') {
+                styleEles.push(ele);
+            }
+        }
+
+        styleEles.forEach(function(ele) {
+            var styleContent = ele.innerHTML;
+            style += styleContent;
+            node.removeChild(ele);
+        });
     }
 
     extractStyleSheet();
