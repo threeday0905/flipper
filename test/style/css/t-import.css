@@ -1,0 +1,8 @@
+t-import {
+    display: block;
+    border: 1px solid pink;
+}
+
+t-import h1 {
+    color: pink;
+}
