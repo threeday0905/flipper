@@ -469,6 +469,21 @@ utils.resolveUri = function(target, baseUri) {
     return new URL(target, baseUri).toString();
 };
 
+utils.eachChildNodes = function(ele, checkFn, callbackFn) {
+    var child, i, len,
+        hasCheckFn = typeof checkFn === 'function';
+
+    if (ele.childNodes) {
+        for (i = 0, len = ele.childNodes.length; i < len; i += 1) {
+            child = ele.childNodes[i];
+
+            if (!hasCheckFn || checkFn(child)) {
+                callbackFn(child);
+            }
+        }
+    }
+};
+
 Flipper.utils = utils;
 
 var templateEngines = {};
@@ -1024,22 +1039,23 @@ Component.prototype = {
         var setupTplIfIdMatched = function(ele) {
             if ( (ele.id || 'index') === viewName) {
                 result = ele.innerHTML;
-                return true;
-            } else {
-                return false;
             }
         };
 
         if (!result) {
-            $(this.definitionEle).find(' > template').each(function() {
-                return !setupTplIfIdMatched(this);
+            utils.eachChildNodes(this.definitionEle, function(ele) {
+                return ele.tagName && ele.tagName.toLowerCase() === 'template';
+            }, function(ele) {
+                return setupTplIfIdMatched(ele);
             });
-
         }
 
         if (!result) {
-            $(this.definitionEle).find(' > script[type="template"]').each(function() {
-                return !setupTplIfIdMatched(this);
+            utils.eachChildNodes(this.definitionEle, function(ele) {
+                return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
+                        ele.getAttribute('type') === 'template';
+            }, function(ele) {
+                return setupTplIfIdMatched(ele);
             });
         }
 
@@ -1310,50 +1326,36 @@ function parseFactoryArgs(name, dependencies, elementProto) {
     };
 }
 
-/*function collectViewsFromNode(node) {
-    var views = {};
-    $(node).find(' > template').each(function() {
-        var $tpl = $(this);
-        views[ $tpl.attr('id') || '' ] = $tpl.html();
-    });
-    return views;
-}*/
-
-
 function collectStyleFromNode(node) {
     var baseURI = tryGetBaseUriFromNode(node),
         style = '';
 
     // TODO: Copy Attributes, such as
     function extractStyleSheet() {
-        var ele, i, len, linkEles = [];
+        var linkEles = [];
 
-        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
-            ele = node.childNodes[i];
-
-            if (ele.tagName && ele.tagName.toLowerCase() === 'link' &&
-                ele.getAttribute('rel') === 'stylesheets') {
-                linkEles.push(ele);
-            }
-        }
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'link' &&
+                ele.getAttribute('rel') === 'stylesheet';
+        }, function(ele) {
+            linkEles.push(ele);
+        });
 
         linkEles.forEach(function(ele) {
-            var href = new URL(ele.getAttribute('href', baseURI));
+            var href = new URL(ele.getAttribute('href'), baseURI);
             style += '@import "' + href + '";';
             node.removeChild(ele);
         });
     }
 
     function extractStyleElement() {
-        var ele, i, len, styleEles = [];
+        var styleEles = [];
 
-        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
-            ele = node.childNodes[i];
-
-            if (ele.tagName && ele.tagName.toLowerCase() === 'style') {
-                styleEles.push(ele);
-            }
-        }
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'style';
+        }, function(ele) {
+            styleEles.push(ele);
+        });
 
         styleEles.forEach(function(ele) {
             var styleContent = ele.innerHTML;

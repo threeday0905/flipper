@@ -312,22 +312,23 @@ Component.prototype = {
         var setupTplIfIdMatched = function(ele) {
             if ( (ele.id || 'index') === viewName) {
                 result = ele.innerHTML;
-                return true;
-            } else {
-                return false;
             }
         };
 
         if (!result) {
-            $(this.definitionEle).find(' > template').each(function() {
-                return !setupTplIfIdMatched(this);
+            utils.eachChildNodes(this.definitionEle, function(ele) {
+                return ele.tagName && ele.tagName.toLowerCase() === 'template';
+            }, function(ele) {
+                return setupTplIfIdMatched(ele);
             });
-
         }
 
         if (!result) {
-            $(this.definitionEle).find(' > script[type="template"]').each(function() {
-                return !setupTplIfIdMatched(this);
+            utils.eachChildNodes(this.definitionEle, function(ele) {
+                return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
+                        ele.getAttribute('type') === 'template';
+            }, function(ele) {
+                return setupTplIfIdMatched(ele);
             });
         }
 

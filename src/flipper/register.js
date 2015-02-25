@@ -77,50 +77,36 @@ function parseFactoryArgs(name, dependencies, elementProto) {
     };
 }
 
-/*function collectViewsFromNode(node) {
-    var views = {};
-    $(node).find(' > template').each(function() {
-        var $tpl = $(this);
-        views[ $tpl.attr('id') || '' ] = $tpl.html();
-    });
-    return views;
-}*/
-
-
 function collectStyleFromNode(node) {
     var baseURI = tryGetBaseUriFromNode(node),
         style = '';
 
     // TODO: Copy Attributes, such as
     function extractStyleSheet() {
-        var ele, i, len, linkEles = [];
+        var linkEles = [];
 
-        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
-            ele = node.childNodes[i];
-
-            if (ele.tagName && ele.tagName.toLowerCase() === 'link' &&
-                ele.getAttribute('rel') === 'stylesheets') {
-                linkEles.push(ele);
-            }
-        }
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'link' &&
+                ele.getAttribute('rel') === 'stylesheet';
+        }, function(ele) {
+            linkEles.push(ele);
+        });
 
         linkEles.forEach(function(ele) {
-            var href = new URL(ele.getAttribute('href', baseURI));
+            var href = new URL(ele.getAttribute('href'), baseURI);
             style += '@import "' + href + '";';
             node.removeChild(ele);
         });
     }
 
     function extractStyleElement() {
-        var ele, i, len, styleEles = [];
+        var styleEles = [];
 
-        for (i = 0, len = node.childNodes.length; i < len; i += 1) {
-            ele = node.childNodes[i];
-
-            if (ele.tagName && ele.tagName.toLowerCase() === 'style') {
-                styleEles.push(ele);
-            }
-        }
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'style';
+        }, function(ele) {
+            styleEles.push(ele);
+        });
 
         styleEles.forEach(function(ele) {
             var styleContent = ele.innerHTML;

@@ -34,4 +34,19 @@ utils.resolveUri = function(target, baseUri) {
     return new URL(target, baseUri).toString();
 };
 
+utils.eachChildNodes = function(ele, checkFn, callbackFn) {
+    var child, i, len,
+        hasCheckFn = typeof checkFn === 'function';
+
+    if (ele.childNodes) {
+        for (i = 0, len = ele.childNodes.length; i < len; i += 1) {
+            child = ele.childNodes[i];
+
+            if (!hasCheckFn || checkFn(child)) {
+                callbackFn(child);
+            }
+        }
+    }
+};
+
 Flipper.utils = utils;
