@@ -3,13 +3,16 @@
 <polymer-element name="my-element">
     <template>
         <link rel="stylesheet" href="../../../../../bower_components/bootstrap/dist/css/bootstrap.css">
+
+        <style>
+            @import url('./index.css');
+        </style>
         <span>Hello from <b>my-element</b>. This is my Shadow DOM.</span>
         <h1>{{name}}</h1>
     </template>
     <script>
-        console.log('polymer' + 'my-element');
         Polymer({
-            name: 'fuckyou'
+            name: 'Hello Polymer'
         })
     </script>
 </polymer-element>
