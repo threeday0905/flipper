@@ -1,0 +1,35 @@
+<script src="../../build/vendor/jquery/jquery.js"></script>
+<link rel="import" href="./t-inner.html">
+
+<web-component name="t-outer">
+    <style>
+        t-outer {
+            display: block;
+        }
+    </style>
+
+    <template>
+        <t-inner></t-inner>
+        <h1>t-outer</h1>
+        <span></span>
+    </template>
+
+    <script>
+        Flipper.register({
+            ready: function() {
+                var inner = this.querySelector('t-inner'),
+                    span  = this.querySelector('span');
+
+                inner.addEventListener('ready', function() {
+                    console.log('native ready');
+                    span.innerHTML = 'inner is ready';
+                }, false);
+
+                $(inner).on('ready', function() {
+                    console.log('jquery ready');
+                    span.innerHTML = 'inner is ready';
+                });
+            }
+        });
+    </script>
+</web-component>

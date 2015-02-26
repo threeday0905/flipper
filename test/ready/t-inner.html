@@ -1,0 +1,23 @@
+<web-component name="t-inner">
+    <style>
+        t-inner {
+            display: block;
+        }
+    </style>
+
+    <template>
+        <h1>t-inner</h1>
+    </template>
+
+    <script>
+        Flipper.register({
+            ready: function() {
+                return new Promise(function(resolve) {
+                    setTimeout(function() {
+                        resolve();
+                    }, 1000);
+                });
+            }
+        });
+    </script>
+</web-component>
