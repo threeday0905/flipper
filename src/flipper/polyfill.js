@@ -1,11 +1,11 @@
 /*
     TODO Polyfills:
     - all es5 feature (Object.keys, Array.isArray, Object.create, etc.)
-    - current script
     - new URL
     - Promise
-    - web components
     - document base uri
+
+    IE: ?
  */
 
 /* the _currentScript prop may be already polyfill from webcomponentsjs */
