@@ -6,8 +6,6 @@ var fs      = require('fs'),
     perrier = require('perrier'),
     concat  = require('gulp-concat');
 
-var chinese2unicode = require('fd-gulp-chinese2unicode');
-
 var srcFolder  = path.resolve(__dirname, './src'),
     destFolder = path.resolve(__dirname, './build'),
     buildTasks;
@@ -35,12 +33,6 @@ buildTasks = (function() {
             });
         }
 
-        srcFiles.forEach(function(file) {
-            if (!fs.existsSync(file)) {
-                throw new Error('the file ' + file + ' is not exists');
-            }
-        });
-
         return {
             name: taskName,
             dest: destFile,
@@ -56,10 +48,17 @@ buildTasks.forEach(function(task) {
     var buildTaskName = 'build-' + task.name,
         watchTaskName = 'watch-' + task.name;
 
-    gulp.task(buildTaskName, function() {
+    gulp.task(buildTaskName, function(done) {
+        task.src.forEach(function(file) {
+            if (!fs.existsSync(file)) {
+                throw new Error('the file ' + file + ' is not exists');
+            }
+        });
+
         gulp.src(task.src)
             .pipe(concat(task.dest))
-            .pipe(gulp.dest(destFolder));
+            .pipe(gulp.dest(destFolder))
+            .on('end', done);
     });
 
     gulp.task(watchTaskName, function() {
@@ -70,12 +69,5 @@ buildTasks.forEach(function(task) {
     buildTasks.watchQueue.push(watchTaskName);
 });
 
-gulp.task('build', buildTasks.buildQueue, function(cb) {
-    setTimeout(function() {
-        gulp.src('./build/flipper-polyfill.js')
-            .pipe(chinese2unicode())
-            .pipe(gulp.dest('./build/'));
-        cb();
-    }, 1000);
-});
+gulp.task('build', buildTasks.buildQueue);
 gulp.task('default', [ 'build' ].concat(buildTasks.watchQueue));

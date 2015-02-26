@@ -1,6 +1,5 @@
 {
     "flipper.js": [
-        "../build/modules/args-expect/args-expect.js",
         "./intro.snippet",
         "./flipper/polyfill.js",
         "./flipper/root.js",
@@ -16,15 +15,19 @@
         "./flipper/exports.js",
         "./outro.snippet"
     ],
-    "flipper-plugin-xtpl.js": [
-        "../build/modules/xtemplate/xtemplate-standalone.js",
+    "plugins/xtpl.js": [
         "./intro.snippet",
         "./plugins/render-xtpl.js",
         "./outro.snippet"
     ],
+    "flipper-with-kissy.js": [
+        "../build/flipper.js",
+        "../build/vendor/xtemplate/xtemplate-standalone.js",
+        "../build/plugins/xtpl.js"
+    ],
     "flipper-polyfill.js": [
         "./polyfill/license.txt",
-        "../build/modules/webcomponentsjs/webcomponents.js",
+        "../build/vendor/webcomponentsjs/webcomponents.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
