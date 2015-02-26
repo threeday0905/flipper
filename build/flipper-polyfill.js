@@ -1,6 +1,6 @@
 /**
- *  Most of logics are copied from webcomponentjs, just add some stub methods for Flipper at the end of this file.
-    Original project is in: <https://github.com/webcomponents/webcomponentsjs>
+ *  Most of logics below are copied from webcomponentjs, we just add some stub methods for Flipper at the end of this file.
+    Original project is here: <https://github.com/webcomponents/webcomponentsjs>
  */
 
 /**
