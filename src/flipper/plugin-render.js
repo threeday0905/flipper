@@ -1,8 +1,9 @@
 var templateEngines = {};
 
 function registerTemplateEngine(name, engine) {
-    expect(name).isString();
-    expect(engine).notNull();
+    if (typeof name !== 'string' || !engine) {
+        throw new Error('template engine arg have wrong format');
+    }
 
     if (templateEngines[name]) {
         throw new Error('template engine [' + name + '] is already registered');
@@ -15,22 +16,32 @@ function registerTemplateEngine(name, engine) {
 
     var views = {};
 
+    function throwIfViewIdError(viewId) {
+        if (typeof viewId !== 'string' || !viewId) {
+            throw new Error('view id has wrong format');
+        }
+    }
+
     templateEngines[name] = {
         hasView: function(viewId) {
-            expect(viewId).isString().notNull();
+            throwIfViewIdError(viewId);
             return !!views[viewId];
         },
         getView: function(viewId) {
-            expect(viewId).isString().notNull();
+            throwIfViewIdError(viewId);
             return views[viewId];
         },
         addView: function(viewId, viewContent) {
-            expect(viewId).isString().notNull();
-            expect(viewContent).isString();
+            throwIfViewIdError(viewId);
+
+            if (typeof viewContent !== 'string') {
+                throw new Error('view content must be string');
+            }
+
             views[viewId] = viewContent;
         },
         renderView: function(viewId, model, options) {
-            expect(viewId).isString().notNull();
+            throwIfViewIdError(viewId);
             var view = views[viewId];
 
             if (!view) {

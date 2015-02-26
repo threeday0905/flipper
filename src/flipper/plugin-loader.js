@@ -1,11 +1,12 @@
 var loaders = {};
 
 function registerLoader(name, loader) {
-    expect(name).isString();
-    expect(loader).notNull();
+    if (typeof name !== 'string' || !loader) {
+        throw new Error('loader args have wrong format');
+    }
 
     if (loaders[name]) {
-        throw new Error('loaders [' + name + '] is already registered');
+        throw new Error('loader [' + name + '] is already registered');
     }
 
     if (typeof loader !== 'function') {
