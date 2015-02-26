@@ -468,7 +468,10 @@ Component.prototype = {
 
         return Promise.resolve(result).then(function() {
             element.removeAttribute('unresolved');
-            $(element).trigger('ready');
+            var readyEvent = new CustomEvent('ready');
+            element.dispatchEvent(readyEvent);
+
+            //$(element).trigger('ready');
         });
     },
 
