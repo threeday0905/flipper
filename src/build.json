@@ -20,21 +20,18 @@
         "./plugins/render-xtpl.js",
         "./outro.snippet"
     ],
-    "flipper-with-kissy.js": [
-        "../build/flipper.js",
-        "../build/vendor/xtemplate/xtemplate-standalone.js",
-        "../build/plugins/xtpl.js"
-    ],
-    "flipper-polyfill.js": [
+    "polyfill.js": [
         "./polyfill/license.txt",
         "../build/vendor/webcomponentsjs/webcomponents.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
     ],
-    "flipper-full.js": [
-        "../build/flipper-polyfill.js",
-        "../build/flipper.js"
+    "flipper-bundle.js": [
+        "../build/polyfill.js",
+        "../build/flipper.js",
+        "../build/vendor/xtemplate/xtemplate-standalone.js",
+        "../build/plugins/xtpl.js"
     ]
     /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"
