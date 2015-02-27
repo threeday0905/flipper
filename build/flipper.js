@@ -205,38 +205,13 @@ registerTemplateEngine('default', {
 Flipper.registerTemplateEngine = registerTemplateEngine;
 Flipper.getTemplateEngine = getTemplateEngine;
 
-var loaders = {};
+Flipper.require = function() {
+    window.require.apply(null, arguments);
+};
 
-function registerLoader(name, loader) {
-    if (typeof name !== 'string' || !loader) {
-        throw new Error('loader args have wrong format');
-    }
-
-    if (loaders[name]) {
-        throw new Error('loader [' + name + '] is already registered');
-    }
-
-    if (typeof loader !== 'function') {
-        throw new Error('loader must be a function' + name);
-    }
-
-    loaders[name] = loader;
-}
-
-function getLoader(name) {
-    if (!loaders[name]) {
-        throw new Error('could not found the loader: ' + name);
-    }
-
-    return loaders[name];
-}
-
-if (window.require) {
-    registerLoader('default', window.require);
-}
-
-Flipper.registerLoader = registerLoader;
-Flipper.getLoader = getLoader;
+Flipper.require.check = function() {
+    return !!window.require;
+};
 
 var dataCenter = {},
     dataCenterUsage = {};
@@ -313,13 +288,15 @@ function createNonStrictPromise(name) {
  *      1. tag: <web-componen>....</web-component>
  *      2. script: Flipper.register( ... )
  */
-var PROTO_DIST_COUNT = 2;
+var DEF_DIST_COUNT = 2;
 
 function ComponentDefinition() {
-    this.countOfProto = PROTO_DIST_COUNT;
+    this.countOfProto = DEF_DIST_COUNT;
     this.proto = {};   /* the prototoype of element */
 
+    this.countOfModules = DEF_DIST_COUNT;
     this.modules = {}; /* dependent modules */
+
     this.views = {};   /* external view files */
 
     this.promises = {
@@ -336,7 +313,6 @@ function ComponentDefinition() {
         return this;
     });
 
-    this.resolveModules();
     this.resolveViews();
 }
 
@@ -346,13 +322,7 @@ function throwIfAlreadResolved(currentCount, name) {
     }
 }
 
-function throwIfNotObject(target, name) {
-    if (typeof target !== 'object') {
-        throw new Error('component declaration [' + name + '] has wrong format');
-    }
-}
-
-function goThrowIfIsReady(currentCount, goThrough) {
+function goThroughIfReady(currentCount, goThrough) {
     if (currentCount === 0) {
         goThrough();
     }
@@ -363,19 +333,46 @@ ComponentDefinition.prototype = {
         return this.promiseAll.then(onFulfillment, onRejection);
     },
     mixinProto: function(newProto) {
-        throwIfAlreadResolved(this.countOfProto, 'element prototype');
-        throwIfNotObject(newProto, 'element prototype');
+        var self = this;
+        function mixin(obj) {
+            throwIfAlreadResolved(self.countOfProto, 'element prototype');
+            utils.mixin(self.proto, obj);
+            self.countOfProto -= 1;
+            goThroughIfReady(self.countOfProto, self.resolveProto.bind(self));
 
-        utils.mixin(this.proto, newProto);
-        this.countOfProto -= 1;
+        }
 
-        goThrowIfIsReady(this.countOfProto, this.resolveProto.bind(this));
+        if (typeof newProto === 'object') {
+            mixin(newProto);
+        } else if (typeof newProto === 'function') {
+            self.promises.modules.then(function(modules) {
+                var protoObj = newProto.apply(null, modules);
+                mixin(protoObj);
+            });
+        } else {
+            throw new Error('element prototype has wrong format');
+        }
     },
     resolveProto: function() {
         this.promises.proto.resolve(this.proto);
     },
+    mixinModules: function(modules) {
+        var self = this;
+
+        throwIfAlreadResolved(self.countOfModules, 'element dependencies');
+
+        if (modules) {
+            this.modules = modules;
+        }
+        this.countOfModules -= 1;
+        goThroughIfReady(self.countOfModules, self.resolveModules.bind(self));
+
+    },
     resolveModules: function() {
         this.promises.modules.resolve(this.modules);
+    },
+    rejectModules: function(reason) {
+        this.promises.modules.reject(reason);
     },
     resolveViews: function() {
         this.promises.views.resolve(this.views);
@@ -601,7 +598,7 @@ function Component(name) {
     this.definition = new ComponentDefinition();
 
     this.templateEngine = 'default';
-    this.injectionMode  = 'shadow-dom';
+    this.injectionMode  = 'light-dom';
 
     this.model = {};
     this.views = {};
@@ -675,6 +672,8 @@ Component.prototype = {
         if (typeof error === 'string') {
             error = new Error(error);
         }
+
+        this.fire('initialized', error);
 
         if (error) {
             throw error;
@@ -1043,7 +1042,7 @@ function wakeComponentUpIfTimeout(component) {
         }
 
         component.initialize();
-        throw new Error('component ' + name.name + ' is initialized automatically' +
+        throw new Error('component ' + component.name + ' is initialized automatically' +
             ', forgot [noscript] attribute? ');
     }, 10000);
 
@@ -1071,26 +1070,33 @@ function wakeComponentUpIfTimeout(component) {
 
      /* it will create new component or return pending component */
      var component = createComponent(name),
-        definition = component.definition;
+         definition = component.definition;
 
-     function registerElementProto(modules) {
-         if (typeof elementProto === 'function') {
-             elementProto = elementProto.apply(null, modules || []);
-         }
+     function markRegistrationCompleted(modules) {
+        /* if the elementProto is function,
+           it will be executed after dependency module loaded,
+           and the returing value will be assigned as element proto */
+        definition.mixinProto(elementProto);
 
-         /* it will throw error if element proto is not an object */
-         definition.mixinProto(elementProto);
+        /* we need to call mixin modules even there is no dependencies,
+           since the ready method will be called after mixin twice */
+        definition.mixinModules(modules);
 
-         /* if the function is standalone, then mark proto as resolved */
-         if (isStandalone) {
-             definition.resolveProto();
-         }
+        /* in normal case, the register method will be called from
+                1. definition tag: <web-component>
+                2. register method: Flipper.register()
+
+           if the component only has one registration fn,
+                then call resolve method directly */
+        if (isStandalone) {
+            definition.resolveProto();
+            definition.resolveModules();
+        } else {
+            wakeComponentUpIfTimeout(component);
+        }
      }
 
-     /* initialize created component, or create it */
-     if (!dependencies) {
-         registerElementProto();
-     } else {
+     if (dependencies) {
          var baseURI = tryGetBaseUriFromCurrentScript();
          dependencies = dependencies.map(function(id) {
              if (id.charAt(0) === '.') {
@@ -1099,15 +1105,27 @@ function wakeComponentUpIfTimeout(component) {
                  return id;
              }
          });
-         require(dependencies, function() {
-             registerElementProto.call(null, arguments);
-         });
-     }
 
-     /* if this component need to waiting other definition,
-        then setTimeout to init automatically then log error */
-     if (!isStandalone) {
-        wakeComponentUpIfTimeout(component);
+         if (Flipper.require.check()) {
+            Flipper.require(dependencies, {
+                success: function() {
+                    markRegistrationCompleted(arguments);
+                },
+                error: function(moduleA) {
+                    var error = 'error';
+                    if (moduleA && moduleA.error && moduleA.error.exception) {
+                        error = moduleA.error.exception;
+                    }
+
+                    component.markFailed(error);
+                }
+            });
+         } else {
+            component.markFailed('could not found the global module loader');
+         }
+
+     } else {
+        markRegistrationCompleted();
      }
  }
 
@@ -1142,15 +1160,14 @@ function registerFromDeclarationTag(ele) {
 
     elementProto = {
         definitionEle: ele,
-
         style: collectStyleFromNode(ele),
-
         templateEngine: ele.getAttribute('template-engine'),
         injectionMode:  ele.getAttribute('injection-mode')
     };
 
     componentArgs = {
         name: ele.getAttribute('name'),
+        dependencies: undefined,
         elementProto: elementProto
     };
 

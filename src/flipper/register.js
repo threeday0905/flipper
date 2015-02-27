@@ -133,7 +133,7 @@ function wakeComponentUpIfTimeout(component) {
         }
 
         component.initialize();
-        throw new Error('component ' + name.name + ' is initialized automatically' +
+        throw new Error('component ' + component.name + ' is initialized automatically' +
             ', forgot [noscript] attribute? ');
     }, 10000);
 
@@ -161,26 +161,33 @@ function wakeComponentUpIfTimeout(component) {
 
      /* it will create new component or return pending component */
      var component = createComponent(name),
-        definition = component.definition;
+         definition = component.definition;
 
-     function registerElementProto(modules) {
-         if (typeof elementProto === 'function') {
-             elementProto = elementProto.apply(null, modules || []);
-         }
+     function markRegistrationCompleted(modules) {
+        /* if the elementProto is function,
+           it will be executed after dependency module loaded,
+           and the returing value will be assigned as element proto */
+        definition.mixinProto(elementProto);
 
-         /* it will throw error if element proto is not an object */
-         definition.mixinProto(elementProto);
+        /* we need to call mixin modules even there is no dependencies,
+           since the ready method will be called after mixin twice */
+        definition.mixinModules(modules);
 
-         /* if the function is standalone, then mark proto as resolved */
-         if (isStandalone) {
-             definition.resolveProto();
-         }
+        /* in normal case, the register method will be called from
+                1. definition tag: <web-component>
+                2. register method: Flipper.register()
+
+           if the component only has one registration fn,
+                then call resolve method directly */
+        if (isStandalone) {
+            definition.resolveProto();
+            definition.resolveModules();
+        } else {
+            wakeComponentUpIfTimeout(component);
+        }
      }
 
-     /* initialize created component, or create it */
-     if (!dependencies) {
-         registerElementProto();
-     } else {
+     if (dependencies) {
          var baseURI = tryGetBaseUriFromCurrentScript();
          dependencies = dependencies.map(function(id) {
              if (id.charAt(0) === '.') {
@@ -189,15 +196,27 @@ function wakeComponentUpIfTimeout(component) {
                  return id;
              }
          });
-         require(dependencies, function() {
-             registerElementProto.call(null, arguments);
-         });
-     }
 
-     /* if this component need to waiting other definition,
-        then setTimeout to init automatically then log error */
-     if (!isStandalone) {
-        wakeComponentUpIfTimeout(component);
+         if (Flipper.require.check()) {
+            Flipper.require(dependencies, {
+                success: function() {
+                    markRegistrationCompleted(arguments);
+                },
+                error: function(moduleA) {
+                    var error = 'error';
+                    if (moduleA && moduleA.error && moduleA.error.exception) {
+                        error = moduleA.error.exception;
+                    }
+
+                    component.markFailed(error);
+                }
+            });
+         } else {
+            component.markFailed('could not found the global module loader');
+         }
+
+     } else {
+        markRegistrationCompleted();
      }
  }
 
@@ -232,15 +251,14 @@ function registerFromDeclarationTag(ele) {
 
     elementProto = {
         definitionEle: ele,
-
         style: collectStyleFromNode(ele),
-
         templateEngine: ele.getAttribute('template-engine'),
         injectionMode:  ele.getAttribute('injection-mode')
     };
 
     componentArgs = {
         name: ele.getAttribute('name'),
+        dependencies: undefined,
         elementProto: elementProto
     };
 

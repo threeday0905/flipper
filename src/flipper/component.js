@@ -216,7 +216,7 @@ function Component(name) {
     this.definition = new ComponentDefinition();
 
     this.templateEngine = 'default';
-    this.injectionMode  = 'shadow-dom';
+    this.injectionMode  = 'light-dom';
 
     this.model = {};
     this.views = {};
@@ -290,6 +290,8 @@ Component.prototype = {
         if (typeof error === 'string') {
             error = new Error(error);
         }
+
+        this.fire('initialized', error);
 
         if (error) {
             throw error;
