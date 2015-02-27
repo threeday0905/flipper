@@ -1,0 +1,19 @@
+<web-component name="t-render-error">
+    <style>
+        t-render-error {
+            display: block;
+        }
+    </style>
+
+    <template>
+        <h1>t-render-error</h1>
+    </template>
+
+    <script>
+        Flipper.register({
+            fetch: function() {
+                throw new Error('fetch error');
+            }
+        });
+    </script>
+</web-component>

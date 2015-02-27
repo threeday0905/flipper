@@ -1,0 +1,22 @@
+<web-component name="t-require" template-engine="xtpl">
+    <style>
+        t-require {
+            display: block;
+        }
+    </style>
+
+    <template>
+        <h1>t-require</h1>
+        <h2>Sub module title: <strong>{{title}}</strong></h2>
+    </template>
+
+    <script>
+        Flipper.register(['./sub/a'], function(a) {
+            return {
+                fetch: function() {
+                    return a;
+                }
+            };
+        });
+    </script>
+</web-component>
