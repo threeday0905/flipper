@@ -967,7 +967,7 @@ function parseFactoryArgs(name, dependencies, elementProto) {
         name = tryGetNameFromCurrentScript();
 
     /* Flipper.register( { ... } ); */
-    } else if (typeof name === 'object') {
+    } else if (typeof name === 'object' || name === undefined) {
         elementProto = name;
         dependencies = undefined;
         name = tryGetNameFromCurrentScript();
@@ -1059,18 +1059,21 @@ function wakeComponentUpIfTimeout(component) {
         elementProto = componentArgs.elementProto,
         dependencies = componentArgs.dependencies;
 
-     if (!name) {
-         throw new Error('component name could not be inferred.');
-     }
-
-     if (!elementProto) {
-         throw new Error('component prototype could not be inferred.');
-     }
+    if (!name) {
+        throw new Error('component name could not be inferred.');
+    }
 
 
-     /* it will create new component or return pending component */
-     var component = createComponent(name),
-         definition = component.definition;
+    /* it will create new component or return pending component */
+    var component = createComponent(name),
+        definition = component.definition;
+
+
+    if (!elementProto) {
+         component.markFailed(
+            'component [' + name + '] prototype could not be inferred.');
+         return;
+    }
 
      function markRegistrationCompleted(modules) {
         /* if the elementProto is function,
