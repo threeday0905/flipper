@@ -7010,7 +7010,11 @@ Component.prototype = {
     /* refersh flow */
     renderFail: function(element, err) {
         logError(err);
-        return tryCallLifeCycleEvent(element, 'fail', [ err ] );
+        var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
+        return Promise.resolve(result).then(function() {
+            var readyEvent = new CustomEvent('fail');
+            element.dispatchEvent(readyEvent);
+        });
     },
     renderEnd: function(element) {
         var result = tryCallLifeCycleEvent(element, 'ready');
