@@ -22,7 +22,7 @@
     ],
     "polyfill.js": [
         "./polyfill/license.txt",
-        "../build/vendor/webcomponentsjs/webcomponents.js",
+        "../build/vendor/webcomponentsjs/webcomponents-lite.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
