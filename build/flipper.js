@@ -112,7 +112,9 @@ utils.log = function log() {
 
 
 utils.resolveUri = function(target, baseUri) {
-    return new URL(target, baseUri).toString();
+    //return new URL(target, baseUri).toString();
+    var url = new URL(target, baseUri);
+    return url.href;
 };
 
 utils.eachChildNodes = function(ele, checkFn, callbackFn) {
@@ -696,6 +698,14 @@ Component.prototype = {
         var setupTplIfIdMatched = function(ele) {
             if ( (ele.id || 'index') === viewName) {
                 result = ele.innerHTML;
+
+                /* if template polyfill,
+                    all content will be copied to content as a fragment */
+                if (!result && ele.content && ele.content.cloneNode) {
+                    var div = document.createElement('div');
+                    div.appendChild(ele.content.cloneNode(true));
+                    result = div.innerHTML;
+                }
             }
         };
 
@@ -952,7 +962,8 @@ function tryGetWrapperFromCurrentScript() {
 
 function tryGetBaseUriFromCurrentScript() {
     var script = tryGetCurrentScript();
-    return script ? script.baseURI : tryGetBaseUri();
+    return script ?
+        (script.baseURI || script.ownerDocument.baseURI ) : tryGetBaseUri();
 }
 
 function tryGetNameFromCurrentScript() {
