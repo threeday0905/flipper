@@ -31,7 +31,9 @@ utils.log = function log() {
 
 
 utils.resolveUri = function(target, baseUri) {
-    return new URL(target, baseUri).toString();
+    //return new URL(target, baseUri).toString();
+    var url = new URL(target, baseUri);
+    return url.href;
 };
 
 utils.eachChildNodes = function(ele, checkFn, callbackFn) {
