@@ -4,7 +4,10 @@ var fs      = require('fs'),
     path    = require('path'),
     gulp    = require('gulp'),
     perrier = require('perrier'),
-    concat  = require('gulp-concat');
+    rename  = require('gulp-rename'),
+    concat  = require('gulp-concat'),
+    uglify  = require('gulp-uglify');
+
 
 var srcFolder  = path.resolve(__dirname, './src'),
     destFolder = path.resolve(__dirname, './build'),
@@ -67,6 +70,15 @@ buildTasks.forEach(function(task) {
 
     buildTasks.buildQueue.push(buildTaskName);
     buildTasks.watchQueue.push(watchTaskName);
+});
+
+gulp.task('compress', function() {
+    gulp.src( [ 'build/*.js', '!build/*.min.js' ] )
+        .pipe(uglify())
+        .pipe(rename(function (path) {
+            path.basename += '.min';
+        }))
+        .pipe(gulp.dest('./build/'));
 });
 
 gulp.task('build', buildTasks.buildQueue);
