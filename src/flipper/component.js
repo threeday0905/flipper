@@ -314,6 +314,14 @@ Component.prototype = {
         var setupTplIfIdMatched = function(ele) {
             if ( (ele.id || 'index') === viewName) {
                 result = ele.innerHTML;
+
+                /* if template polyfill,
+                    all content will be copied to content as a fragment */
+                if (!result && ele.content && ele.content.cloneNode) {
+                    var div = document.createElement('div');
+                    div.appendChild(ele.content.cloneNode(true));
+                    result = div.innerHTML;
+                }
             }
         };
 

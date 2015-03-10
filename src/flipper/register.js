@@ -39,7 +39,8 @@ function tryGetWrapperFromCurrentScript() {
 
 function tryGetBaseUriFromCurrentScript() {
     var script = tryGetCurrentScript();
-    return script ? script.baseURI : tryGetBaseUri();
+    return script ?
+        (script.baseURI || script.ownerDocument.baseURI ) : tryGetBaseUri();
 }
 
 function tryGetNameFromCurrentScript() {
