@@ -22,7 +22,8 @@
     ],
     "polyfill.js": [
         "./polyfill/license.txt",
-        "../build/vendor/webcomponentsjs/webcomponents-lite.js",
+        "../build/vendor/promise-polyfill/Promise.js",
+        "../build/vendor/webcomponentsjs/prelease-webcomponents-lite.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
