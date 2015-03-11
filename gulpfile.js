@@ -67,7 +67,7 @@ buildTasks.forEach(function(task, idx) {
             .pipe(gulp.dest(destFolder))
             .pipe(uglify())
             .pipe(rename(function(path) {
-                path.basename += '.min';
+                path.basename += '-min';
             }))
             .pipe(gulp.dest(destFolder));
     };
@@ -92,7 +92,7 @@ gulp.task('compress', buildTasks.buildQueue, function() {
         ])
         .pipe(uglify())
         .pipe(rename(function (path) {
-            path.basename += '.min';
+            path.basename += '-min';
         }))
         .pipe(gulp.dest('./build/'));
 });
