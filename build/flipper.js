@@ -531,6 +531,21 @@ function createElementProto(component) {
                 }
                 options = options || {};
                 options.element = this;
+
+                var commands = this.commands;
+
+                if (typeof commands === 'function') {
+                    commands = commands.call(this);
+                }
+
+                if (typeof commands === 'object') {
+                    if (options.commands) {
+                        utils.mixin(options.commands, commands);
+                    } else {
+                        options.commands = commands;
+                    }
+                }
+
                 return component.renderView(viewName, data, options);
             }
         },
