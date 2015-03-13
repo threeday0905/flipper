@@ -37,9 +37,12 @@ buildTasks = (function() {
         }
 
         return {
-            name: taskName,
-            dest: destFile,
-            src:  srcFiles
+            name:  taskName,
+            dest:  destFile,
+            src:   srcFiles,
+            build: 'build-' + taskName,
+            alone: 'build-alone-' + taskName,
+            watch: 'watch-' + taskName
         };
     });
 }());
@@ -47,36 +50,49 @@ buildTasks = (function() {
 buildTasks.buildQueue = [];
 buildTasks.watchQueue = [];
 
-buildTasks.forEach(function(task) {
-    var buildTaskName = 'build-' + task.name,
-        watchTaskName = 'watch-' + task.name;
+buildTasks.forEach(function(task, idx) {
+    var depTasks = buildTasks.slice(0, idx).map(function(task) {
+        return task.build;
+    });
 
-    gulp.task(buildTaskName, function(done) {
+    var build = function() {
         task.src.forEach(function(file) {
             if (!fs.existsSync(file)) {
                 throw new Error('the file ' + file + ' is not exists');
             }
         });
 
-        gulp.src(task.src)
+        return gulp.src(task.src)
             .pipe(concat(task.dest))
             .pipe(gulp.dest(destFolder))
-            .on('end', done);
+            .pipe(uglify())
+            .pipe(rename(function(path) {
+                path.basename += '-min';
+            }))
+            .pipe(gulp.dest(destFolder));
+    };
+
+    gulp.task(task.build, depTasks, build);
+    gulp.task(task.alone, build);
+
+    gulp.task(task.watch, [ task.build ], function() {
+        return gulp.watch(task.src, [ task.alone ]);
     });
 
-    gulp.task(watchTaskName, function() {
-        gulp.watch(task.src, [ buildTaskName ]);
-    });
-
-    buildTasks.buildQueue.push(buildTaskName);
-    buildTasks.watchQueue.push(watchTaskName);
+    buildTasks.buildQueue.push(task.build);
+    buildTasks.watchQueue.push(task.watch);
 });
 
-gulp.task('compress', function() {
-    gulp.src( [ 'build/*.js', '!build/*.min.js' ] )
+gulp.task('compress', buildTasks.buildQueue, function() {
+    return gulp
+        .src([
+            'build/**/*.js',
+            '!build/vendor/**/*.js',
+            '!build/**/*.min.js'
+        ])
         .pipe(uglify())
         .pipe(rename(function (path) {
-            path.basename += '.min';
+            path.basename += '-min';
         }))
         .pipe(gulp.dest('./build/'));
 });
