@@ -3105,7 +3105,6 @@ function Component(name) {
     this.templateEngine = 'default';
     this.injectionMode  = 'light-dom';
 
-    this.model = {};
     this.views = {};
     this.style = '';
 
@@ -3795,12 +3794,12 @@ function definition() {
 }
 
 if (window.KISSY && typeof window.KISSY.add === 'function') {
-    KISSY.add(definition);
-} else if (typeof window.define === 'function' && window.define.amd) {
+    window.KISSY.add(definition);
+} else if (typeof window.define === 'function' && window.define) {
     window.define(definition);
-} else {
-    window.Flipper = definition();
 }
+
+window.Flipper = definition();
 
 }());
 
