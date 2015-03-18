@@ -22,7 +22,7 @@
     "args-expect": "~0.2.2",
     "bootstrap": "3.3.2",
     "jquery": "~2.1.1",
-    "modulex": "~1.7.4",
+    "modulex": "modulex/modulex#~1.7.10",
     "polymer": "~0.5.2",
     "xtemplate": "xtemplate/xtemplate#~4.1.3",
     "webcomponentsjs": "~0.5.5",
