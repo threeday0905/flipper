@@ -233,7 +233,6 @@ function Component(name) {
     this.templateEngine = 'default';
     this.injectionMode  = 'light-dom';
 
-    this.model = {};
     this.views = {};
     this.style = '';
 
