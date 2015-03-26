@@ -6,6 +6,7 @@
 (function() {
     var root;
 
+
 	if (typeof window === 'object' && window) {
 		root = window;
 	} else {
