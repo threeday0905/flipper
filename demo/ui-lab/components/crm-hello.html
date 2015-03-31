@@ -10,10 +10,12 @@
         }
     </style>
 
+    <!-- {{attr("xxx")}} 是預設提供的模版命令行，可以從attr上取值-->
     <template>
         <section>
+            <span>crm-hello</span>
             <h1>Hello {{name}}</h1>
-            <small>called by key: "{{attr("key") }}"" </small>
+            <small>called by attr: "{{attr("key") }}"" </small>
             <hr>
             <button>Say Hi</button>
         </section>
@@ -21,10 +23,15 @@
 
     <script>
         Flipper.register({
+            /* 開始時會調用*/
             initialize: function() {
+                /* 可以把任何屬性綁到this身上 */
                 this.key = this.getAttribute('key');
             },
+            /* fetch數據會回傳一個model，作為渲染時用, 可回傳Promise也可接受PlainObject */
             fetch: function() {
+                /* 初始化時加上的屬性 */
+
                 var key = this.key;
                 return $.getJSON('./data/title.json').then(function(data) {
                     return {
@@ -32,12 +39,19 @@
                     };
                 });
             },
+
+            /* 渲染結束時會調用 */
             ready: function() {
+                /* model就是fetch回傳的對象 */
                 var model = this.model;
+
+                /* 可以綁定dom事件*/
                 $(this).find('button').on('click', function() {
                     window.alert('hi! ' + model.name);
                 });
             },
+
+            /* 對外公開的api*/
             getName: function() {
                 return this.model.name;
             },
