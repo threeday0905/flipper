@@ -2,19 +2,18 @@
 <html lang="zh-cn">
 
 <head>
-    <title>Dashboard - demo</title>
+    <title>Flipper UI - demo</title>
     <meta charset="utf-8" />
 
     <meta content="webkit" name="renderer">
     <meta content="IE=edge" http-equiv="X-UA-Compatible">
     <meta content="width=device-width, initial-scale=1" name="viewport">
 
-
-
-
+    <!-- 全局依賴模塊,  hi & flipper -->
     <script src="http://g.alicdn.daily.taobao.net/hi/modulex/5.0.0/seed-debug.js"></script>
     <script src="http://g.alicdn.daily.taobao.net/crm/flipper/0.3.4/flipper-bundle.js"></script>
 
+    <!-- 載入組件需要的組件 -->
     <link rel="import" href="./components/crm-hello.html">
     <link rel="import" href="./components/crm-hello2.html">
 
@@ -22,13 +21,14 @@
 
 <body>
 
-
+    <!-- 使用組件 -->
     <crm-hello key="key1" class="person"></crm-hello>
     <crm-hello2 key="key2" class="person"></crm-hello2>
 
+    <!-- 也能想其他html標籤 -->
     <button class="punch">打他一拳</button>
 
-
+    <!-- 能幫組件加上外部樣式 -->
     <style>
         .person {
             border: 1px solid orange;
@@ -43,6 +43,7 @@
         }
     </style>
 
+    <!-- 透過dom節點使用組件api -->
     <script>
         require('lib/jquery/2.1.3/', function($) {
             $('.punch').on('click', function() {
