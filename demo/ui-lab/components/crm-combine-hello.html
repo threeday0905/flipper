@@ -1,0 +1,48 @@
+<link rel="import" href="./crm-hello.html">
+<link rel="import" href="./crm-hello2.html">
+
+<web-component name="crm-combine-hello">
+    <style>
+        crm-combine-hello {
+            display: block;
+        }
+
+        crm-combine-hello .person {
+            border: 1px solid orange;
+            display: inline-block;;
+            margin: 5px;
+            padding: 5px;
+        }
+
+        crm-combine-hello .punch {
+            display: block;
+            width: 280px;
+        }
+    </style>
+
+    <template>
+        <crm-hello key="key1" class="person"></crm-hello>
+        <crm-hello2 key="key2" class="person"></crm-hello2>
+        <button class="punch">打他一拳</button>
+    </template>
+
+    <script>
+    /* register的第一個參數會轉發給KISSY.require作為依賴模塊 */
+    Flipper.register(['lib/jquery/2.1.3/'], function($) {
+
+        return {
+            /* 渲染結束時會調用 */
+            ready: function() {
+                var $root = $(this);
+                $root.find('.punch').on('click', function() {
+                    var person1 = $root.find('crm-hello')[0],
+                        person2 = $root.find('crm-hello2')[0];
+
+                    person1.punch( person2.getName() );
+                });
+            }
+        };
+    });
+    </script>
+    </script>
+</web-component>
