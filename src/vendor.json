@@ -1,26 +1,26 @@
 {
     "args-expect": {
-        "base": "../node_modules/args-expect",
-        "src": "lib/*.js"
+        "base": "../node_modules/args-expect/lib",
+        "src": "*.js"
     },
     "bootstrap":   {
-        "base": "../node_modules/bootstrap",
-        "src": "dist"
+        "base": "../node_modules/bootstrap/dist",
+        "src": "**/*"
     },
     "html5shiv": {
-        "base": "../node_modules/html5shiv",
-        "src": "dist"
+        "base": "../node_modules/html5shiv/dist",
+        "src": "**/*.js"
     },
     "jquery":      {
-        "base": "../node_modules/jquery",
+        "base": "../node_modules/jquery/dist",
         "src": [
-            "dist/*.{js,map}",
-            "!dist/cdn"
+            "*.{js,map}",
+            "!cdn"
         ]
     },
     "modulex":     {
-        "base": "../node_modules/modulex",
-        "src": "build"
+        "base": "../node_modules/modulex/build",
+        "src": "**/*.js"
     },
     "promise-polyfill": {
         "base": "../node_modules/promise-polyfill/",
@@ -34,7 +34,7 @@
         "src": "*.js"
     },
     "xtemplate": {
-        "base": "../node_modules/xtemplate",
-        "src": "./build"
+        "base": "../node_modules/xtemplate/build",
+        "src": "*.js"
     }
 }

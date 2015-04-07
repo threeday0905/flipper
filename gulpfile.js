@@ -45,65 +45,21 @@ function computeFiles(folder, config, check) {
     return files;
 }
 
+var buildHelper = require('./tool/build-helper');
 
 /* sync vendor modules */
 var syncVendors = function(done) {
     var vendorConfig = perrier.load( resolve(srcFolder, 'vendor.json') ),
-        pendingLength = Object.keys(vendorConfig).length;
-
-    function checkDone() {
-        pendingLength -= 1;
-        if (pendingLength === 0) {
-            done();
-        }
-    }
-
-    function getPackageFile(folder) {
-        var availableNames = [ 'package.json', 'bower.json' ],
-            tmpFileName;
-
-        for (var i = 0, len = availableNames.length; i < len; i += 1) {
-            tmpFileName = join(folder, availableNames[i] );
-
-            if (fs.existsSync(tmpFileName)) {
-                return tmpFileName;
-            }
-        }
-    }
+        checkDone = buildHelper.checkMultiTasks(vendorConfig, done );
 
     Object.keys(vendorConfig).forEach(function(vendorName) {
-        var config, sourceFolder, baseFolder, srcFiles, targetFolder;
+        var config = buildHelper.parseConfig(vendorConfig[vendorName], srcFolder),
+            targetFolder = resolve(vendorDistFolder, vendorName);
 
-        config = vendorConfig[vendorName];
-
-        targetFolder = resolve(vendorDistFolder, vendorName);
-        sourceFolder = resolve(srcFolder, config.base);
-
-        baseFolder   = undefined;
-        srcFiles     = config.src;
-
-        if (typeof srcFiles === 'string') {
-            var subFolder = resolve(sourceFolder, config.src);
-
-            /* if src is a folder, then specific base folder with all files inside */
-            if ( fs.existsSync(subFolder) && fs.statSync(subFolder).isDirectory() ) {
-                baseFolder = subFolder;
-                srcFiles = join(subFolder, '**/*');
-            }
-        }
-
-        /* otherwise covert src files to absolute */
-        if (!baseFolder) {
-            srcFiles = Array.isArray(srcFiles) ? srcFiles : [ srcFiles ];
-            srcFiles = srcFiles.map(function(srcFile) {
-                return resolve(sourceFolder, srcFile);
-            });
-        }
-
-        gulp.src(srcFiles, { base: baseFolder })
-            .pipe(gulp.dest(targetFolder))
+        gulp.src(config.src, { base: config.base })
+            .pipe(gulp.dest( targetFolder ))
             .on('end', function() {
-                gulp.src(getPackageFile(sourceFolder))
+                gulp.src(buildHelper.getPackageFile(config.base))
                     .pipe(gulp.dest(targetFolder))
                     .on('end', checkDone);
             });
