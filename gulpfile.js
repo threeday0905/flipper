@@ -88,7 +88,8 @@ gulp.task('compress', buildTasks.buildQueue, function() {
         .src([
             'build/**/*.js',
             '!build/vendor/**/*.js',
-            '!build/**/*.min.js'
+            '!build/**/*.min.js',
+            '!build/**/*-min.js'
         ])
         .pipe(uglify())
         .pipe(rename(function (path) {

@@ -23,7 +23,7 @@
     "polyfill.js": [
         "./polyfill/license.txt",
         "../build/vendor/promise-polyfill/Promise.js",
-        "../build/vendor/webcomponentsjs/prelease-webcomponents-lite.js",
+        "../build/vendor/webcomponentsjs/webcomponents-lite.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
@@ -31,7 +31,7 @@
     "flipper-bundle.js": [
         "../build/polyfill.js",
         "../build/flipper.js",
-        "../build/vendor/xtemplate/xtemplate-standalone.js",
+        "../build/vendor/xtemplate/index-standalone-debug.js",
         "../build/plugins/xtpl.js"
     ]
     /*"vendor/js/jquery.js": [

@@ -3,17 +3,11 @@
     Original project is here: <https://github.com/webcomponents/webcomponentsjs>
  */
 
-(function() {
-    var root;
-
-	if (typeof window === 'object' && window) {
-		root = window;
-	} else {
-		root = global;
-	}
+(function(root) {
 
 	// Use polyfill for setImmediate for performance gains
-	var asap = Promise.immediateFn || root.setImmediate || function(fn) { setTimeout(fn, 1); };
+	var asap = Promise.immediateFn || (typeof setImmediate === 'function' && setImmediate) ||
+		function(fn) { setTimeout(fn, 1); };
 
 	// Polyfill for Function.prototype.bind
 	function bind(fn, thisArg) {
@@ -188,7 +182,8 @@
 	} else if (!root.Promise) {
 		root.Promise = Promise;
 	}
-})();
+
+})(this);
 /**
  * @license
  * Copyright (c) 2014 The Polymer Project Authors. All rights reserved.
@@ -198,7 +193,7 @@
  * Code distributed by Google as part of the polymer project is also
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
-// @version 0.5.5-b437b5c
+// @version 0.6.0
 window.WebComponents = window.WebComponents || {};
 
 (function(scope) {
@@ -241,42 +236,6 @@ window.WebComponents = window.WebComponents || {};
   }
   scope.flags = flags;
 })(WebComponents);
-
-if (typeof WeakMap === "undefined") {
-  (function() {
-    var defineProperty = Object.defineProperty;
-    var counter = Date.now() % 1e9;
-    var WeakMap = function() {
-      this.name = "__st" + (Math.random() * 1e9 >>> 0) + (counter++ + "__");
-    };
-    WeakMap.prototype = {
-      set: function(key, value) {
-        var entry = key[this.name];
-        if (entry && entry[0] === key) entry[1] = value; else defineProperty(key, this.name, {
-          value: [ key, value ],
-          writable: true
-        });
-        return this;
-      },
-      get: function(key) {
-        var entry;
-        return (entry = key[this.name]) && entry[0] === key ? entry[1] : undefined;
-      },
-      "delete": function(key) {
-        var entry = key[this.name];
-        if (!entry || entry[0] !== key) return false;
-        entry[0] = entry[1] = undefined;
-        return true;
-      },
-      has: function(key) {
-        var entry = key[this.name];
-        if (!entry) return false;
-        return entry[0] === key;
-      }
-    };
-    window.WeakMap = WeakMap;
-  })();
-}
 
 (function(scope) {
   "use strict";
@@ -394,7 +353,7 @@ if (typeof WeakMap === "undefined") {
           this._fragment = "#";
           state = "fragment";
         } else {
-          if (EOF != c && " " != c && "\n" != c && "\r" != c) {
+          if (EOF != c && "	" != c && "\n" != c && "\r" != c) {
             this._schemeData += percentEscape(c);
           }
         }
@@ -515,7 +474,7 @@ if (typeof WeakMap === "undefined") {
           seenAt = true;
           for (var i = 0; i < buffer.length; i++) {
             var cp = buffer[i];
-            if (" " == cp || "\n" == cp || "\r" == cp) {
+            if ("	" == cp || "\n" == cp || "\r" == cp) {
               err("Invalid whitespace in authority.");
               continue;
             }
@@ -549,7 +508,7 @@ if (typeof WeakMap === "undefined") {
             state = "relative path start";
           }
           continue;
-        } else if ("  " == c || "\n" == c || "\r" == c) {
+        } else if ("	" == c || "\n" == c || "\r" == c) {
           err("Invalid whitespace in file host.");
         } else {
           buffer += c;
@@ -573,7 +532,7 @@ if (typeof WeakMap === "undefined") {
             break loop;
           }
           continue;
-        } else if ("  " != c && "\n" != c && "\r" != c) {
+        } else if ("	" != c && "\n" != c && "\r" != c) {
           if ("[" == c) {
             seenBracket = true;
           } else if ("]" == c) {
@@ -601,7 +560,7 @@ if (typeof WeakMap === "undefined") {
           }
           state = "relative path start";
           continue;
-        } else if ("  " == c || "\n" == c || "\r" == c) {
+        } else if ("	" == c || "\n" == c || "\r" == c) {
           err("Invalid code point in port: " + c);
         } else {
           invalid.call(this);
@@ -646,7 +605,7 @@ if (typeof WeakMap === "undefined") {
             this._fragment = "#";
             state = "fragment";
           }
-        } else if ("  " != c && "\n" != c && "\r" != c) {
+        } else if ("	" != c && "\n" != c && "\r" != c) {
           buffer += percentEscape(c);
         }
         break;
@@ -655,13 +614,13 @@ if (typeof WeakMap === "undefined") {
         if (!stateOverride && "#" == c) {
           this._fragment = "#";
           state = "fragment";
-        } else if (EOF != c && "  " != c && "\n" != c && "\r" != c) {
+        } else if (EOF != c && "	" != c && "\n" != c && "\r" != c) {
           this._query += percentEscapeQuery(c);
         }
         break;
 
        case "fragment":
-        if (EOF != c && " " != c && "\n" != c && "\r" != c) {
+        if (EOF != c && "	" != c && "\n" != c && "\r" != c) {
           this._fragment += c;
         }
         break;
@@ -786,6 +745,42 @@ if (typeof WeakMap === "undefined") {
   }
   scope.URL = jURL;
 })(this);
+
+if (typeof WeakMap === "undefined") {
+  (function() {
+    var defineProperty = Object.defineProperty;
+    var counter = Date.now() % 1e9;
+    var WeakMap = function() {
+      this.name = "__st" + (Math.random() * 1e9 >>> 0) + (counter++ + "__");
+    };
+    WeakMap.prototype = {
+      set: function(key, value) {
+        var entry = key[this.name];
+        if (entry && entry[0] === key) entry[1] = value; else defineProperty(key, this.name, {
+          value: [ key, value ],
+          writable: true
+        });
+        return this;
+      },
+      get: function(key) {
+        var entry;
+        return (entry = key[this.name]) && entry[0] === key ? entry[1] : undefined;
+      },
+      "delete": function(key) {
+        var entry = key[this.name];
+        if (!entry || entry[0] !== key) return false;
+        entry[0] = entry[1] = undefined;
+        return true;
+      },
+      has: function(key) {
+        var entry = key[this.name];
+        if (!entry) return false;
+        return entry[0] === key;
+      }
+    };
+    window.WeakMap = WeakMap;
+  })();
+}
 
 (function(global) {
   var registrationsTable = new WeakMap();
@@ -2345,6 +2340,21 @@ CustomElements.addModule(function(scope) {
   var useNative = scope.useNative;
   var initializeModules = scope.initializeModules;
   var isIE11OrOlder = /Trident/.test(navigator.userAgent);
+  if (isIE11OrOlder) {
+    (function() {
+      var importNode = document.importNode;
+      document.importNode = function() {
+        var n = importNode.apply(document, arguments);
+        if (n.nodeType == n.DOCUMENT_FRAGMENT_NODE) {
+          var f = document.createDocumentFragment();
+          f.appendChild(n);
+          return f;
+        } else {
+          return n;
+        }
+      };
+    })();
+  }
   if (useNative) {
     var nop = function() {};
     scope.watchShadow = nop;
@@ -2439,7 +2449,6 @@ if (typeof HTMLTemplateElement === "undefined") {
   var head = document.querySelector("head");
   head.insertBefore(style, head.firstChild);
 })(window.WebComponents);
-
 (function() {
 'use strict';
 
