@@ -1,3 +1,8 @@
+## v0.4.0
+- upgrade webcomponentsjs to v0.6.0
+- upgrade xtemplate to v4.2.0. ( and fix bug in local version)
+- update build process ( use npm to instead of bower )
+
 ## v0.3.3
 - New feature - node.renderView() will use its template commands.
 
