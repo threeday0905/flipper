@@ -14,10 +14,13 @@
   "devDependencies": {
     "fd-gulp-chinese2unicode": "0.0.1",
     "gulp": "~3.8.10",
+    "gulp-clean": "~0.3.1",
     "gulp-concat": "^2.5.2",
     "gulp-rename": "^1.2.0",
     "gulp-uglify": "~1.0.2",
-    "perrier": "^0.3.3"
+    "perrier": "~0.3.3",
+    "run-sequence": "~1.0.2",
+    "through2": "~0.6.3"
   },
   "dependencies": {
     "args-expect": "0.2.1",

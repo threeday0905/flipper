@@ -1,37 +1,124 @@
 'use strict';
 
-var fs      = require('fs'),
-    path    = require('path'),
-    gulp    = require('gulp'),
+var gulp    = require('gulp'),
     perrier = require('perrier'),
     rename  = require('gulp-rename'),
     concat  = require('gulp-concat'),
     uglify  = require('gulp-uglify');
 
 
-var srcFolder  = path.resolve(__dirname, './src'),
-    distFolder = path.resolve(__dirname, './build');
+var fs      = require('fs'),
+    join    = require('path').join,
+    resolve = require('path').resolve;
+
+var srcFolder  = resolve(__dirname, './src'),
+    distFolder = resolve(__dirname, './build'),
+    vendorDistFolder = resolve(distFolder, 'vendor');
+
+/* config reader */
+function checkExists(fileName) {
+    if (fileName.lastIndexOf('*') > -1 && !fs.existsSync(fileName)) {
+        throw new Error(fileName + ' is not exists');
+    }
+}
+
+function computeFiles(folder, config, check) {
+    var files = [];
+
+    if (Array.isArray( config )) {
+        files = config.map(function(fileName) {
+            return resolve(folder, fileName);
+        });
+        if (check) {
+            files.map(checkExists);
+        }
+    } else if (typeof config === 'string') {
+        folder = resolve(folder, config);
+        if (check) {
+            checkExists( folder );
+        }
+        files = join(folder, '/**/*.*');
+    } else {
+        throw new Error('error config format for: ' + config);
+    }
+
+    return files;
+}
 
 
-/* shortcut methods */
-var resolveSrc  = path.resolve.bind(path, srcFolder);
-    /*, resolveDist = path.resolve.bind(path, distFolder); */
+/* sync vendor modules */
+var syncVendors = function(done) {
+    var vendorConfig = perrier.load( resolve(srcFolder, 'vendor.json') ),
+        pendingLength = Object.keys(vendorConfig).length;
+
+    function checkDone() {
+        pendingLength -= 1;
+        if (pendingLength === 0) {
+            done();
+        }
+    }
+
+    function getPackageFile(folder) {
+        var availableNames = [ 'package.json', 'bower.json' ],
+            tmpFileName;
+
+        for (var i = 0, len = availableNames.length; i < len; i += 1) {
+            tmpFileName = join(folder, availableNames[i] );
+
+            if (fs.existsSync(tmpFileName)) {
+                return tmpFileName;
+            }
+        }
+    }
+
+    Object.keys(vendorConfig).forEach(function(vendorName) {
+        var config, sourceFolder, baseFolder, srcFiles, targetFolder;
+
+        config = vendorConfig[vendorName];
+
+        targetFolder = resolve(vendorDistFolder, vendorName);
+        sourceFolder = resolve(srcFolder, config.base);
+
+        baseFolder   = undefined;
+        srcFiles     = config.src;
+
+        if (typeof srcFiles === 'string') {
+            var subFolder = resolve(sourceFolder, config.src);
+
+            /* if src is a folder, then specific base folder with all files inside */
+            if ( fs.existsSync(subFolder) && fs.statSync(subFolder).isDirectory() ) {
+                baseFolder = subFolder;
+                srcFiles = join(subFolder, '**/*');
+            }
+        }
+
+        /* otherwise covert src files to absolute */
+        if (!baseFolder) {
+            srcFiles = Array.isArray(srcFiles) ? srcFiles : [ srcFiles ];
+            srcFiles = srcFiles.map(function(srcFile) {
+                return resolve(sourceFolder, srcFile);
+            });
+        }
+
+        gulp.src(srcFiles, { base: baseFolder })
+            .pipe(gulp.dest(targetFolder))
+            .on('end', function() {
+                gulp.src(getPackageFile(sourceFolder))
+                    .pipe(gulp.dest(targetFolder))
+                    .on('end', checkDone);
+            });
+    });
+};
 
 
 /* build related tasks */
 var buildTasks = (function() {
-    var buildConfig = perrier.load( resolveSrc('build.json') );
+    var buildConfig = perrier.load(
+        resolve(srcFolder, 'build.json')
+    );
 
     return Object.keys(buildConfig).map(function(taskName) {
-        var srcFiles;
-
-        if (Array.isArray( buildConfig[taskName] )) {
-            srcFiles = buildConfig[taskName].map(function(srcFileName) {
-                return resolveSrc(srcFileName);
-            });
-        } else {
-            throw new Error('build files for ' + taskName + ' must be an array');
-        }
+        var srcFiles = computeFiles(srcFolder, buildConfig[taskName]);
 
         return {
             dist:  taskName, /* dist file name */
@@ -52,11 +139,7 @@ buildTasks.forEach(function(task, idx) {
     });
 
     var build = function() {
-        task.src.forEach(function(file) {
-            if (!fs.existsSync(file)) {
-                throw new Error('the file ' + file + ' is not exists');
-            }
-        });
+        task.src.forEach(checkExists);
 
         return gulp.src(task.src)
             .pipe(concat(task.dist))
@@ -79,5 +162,6 @@ buildTasks.forEach(function(task, idx) {
     buildTasks.watchQueue.push(task.watch);
 });
 
+gulp.task('sync-vendor', syncVendors);
 gulp.task('build', buildTasks.buildQueue);
 gulp.task('default', [ 'build' ].concat(buildTasks.watchQueue));

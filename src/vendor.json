@@ -1,0 +1,40 @@
+{
+    "args-expect": {
+        "base": "../node_modules/args-expect",
+        "src": "lib/*.js"
+    },
+    "bootstrap":   {
+        "base": "../node_modules/bootstrap",
+        "src": "dist"
+    },
+    "html5shiv": {
+        "base": "../node_modules/html5shiv",
+        "src": "dist"
+    },
+    "jquery":      {
+        "base": "../node_modules/jquery",
+        "src": [
+            "dist/*.{js,map}",
+            "!dist/cdn"
+        ]
+    },
+    "modulex":     {
+        "base": "../node_modules/modulex",
+        "src": "build"
+    },
+    "promise-polyfill": {
+        "base": "../node_modules/promise-polyfill/",
+        "src": [
+            "Promise.js",
+            "Promise.min.js"
+        ]
+    },
+    "webcomponentsjs": {
+        "base": "../node_modules/webcomponents.js/",
+        "src": "*.js"
+    },
+    "xtemplate": {
+        "base": "../node_modules/xtemplate",
+        "src": "./build"
+    }
+}
