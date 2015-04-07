@@ -1,0 +1,58 @@
+{
+  "name": "promise-polyfill",
+  "version": "2.0.2",
+  "description": "Lightweight promise polyfill. A+ compliant",
+  "main": "Promise.js",
+  "scripts": {
+    "test": "promises-aplus-tests tests/adapter.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://taylorhakes@github.com/taylorhakes/promise-polyfill.git"
+  },
+  "author": {
+    "name": "Taylor Hakes"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/taylorhakes/promise-polyfill/issues"
+  },
+  "homepage": "https://github.com/taylorhakes/promise-polyfill",
+  "devDependencies": {
+    "promises-aplus-tests": "*",
+    "grunt": "^0.4.4",
+    "grunt-contrib-uglify": "^0.4.0"
+  },
+  "keywords": [
+    "promise",
+    "promise-polyfill",
+    "ES6",
+    "promises-aplus"
+  ],
+  "dependencies": {},
+  "_id": "promise-polyfill@2.0.2",
+  "dist": {
+    "shasum": "3908dda91f5d130bfb3d09b3e1f77c37c4cb2669",
+    "size": 4778,
+    "noattachment": false,
+    "key": "promise-polyfill/-/promise-polyfill-2.0.2.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/promise-polyfill/download/promise-polyfill-2.0.2.tgz"
+  },
+  "_from": "promise-polyfill@*",
+  "_npmVersion": "1.4.3",
+  "_npmUser": {
+    "name": "taylorhakes",
+    "email": "npm@taylorhakes.com"
+  },
+  "maintainers": [
+    {
+      "name": "taylorhakes",
+      "email": "npm@taylorhakes.com"
+    }
+  ],
+  "directories": {},
+  "publish_time": 1427854054212,
+  "_cnpm_publish_time": 1427854054212,
+  "_shasum": "3908dda91f5d130bfb3d09b3e1f77c37c4cb2669",
+  "_resolved": "http://registry.npm.alibaba-inc.com/promise-polyfill/download/promise-polyfill-2.0.2.tgz"
+}

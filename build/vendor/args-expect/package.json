@@ -1,0 +1,67 @@
+{
+  "name": "args-expect",
+  "version": "0.2.1",
+  "description": "An tiny tool to make sure all arguments are as expected.",
+  "keywords": [
+    "util",
+    "arguments",
+    "expect",
+    "assertion"
+  ],
+  "author": {
+    "name": "Herman Lee",
+    "email": "threeday0905@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/threeday0905/args-expect.git"
+  },
+  "main": "./lib/args-expect",
+  "scripts": {
+    "test": "grunt test",
+    "build": "grunt build"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "grunt": "~0.4.4",
+    "grunt-contrib-jshint": "~0.9.2",
+    "grunt-contrib-concat": "~0.3.0",
+    "grunt-shell": "~0.6.4",
+    "grunt-contrib-uglify": "~0.4.0",
+    "matchdep": "~0.3.0",
+    "mocha": "~1.18.0",
+    "chai": "~1.9.0",
+    "grunt-contrib-clean": "~0.5.0",
+    "grunt-mocha-test": "~0.10.0"
+  },
+  "gitHead": "03c6137969651f78f21fc552bc207d9de9d7e158",
+  "bugs": {
+    "url": "https://github.com/threeday0905/args-expect/issues"
+  },
+  "homepage": "https://github.com/threeday0905/args-expect",
+  "_id": "args-expect@0.2.1",
+  "_shasum": "08309e0bd9fab1adfa24012de598b03b4e01da36",
+  "_from": "args-expect@*",
+  "_npmVersion": "1.4.21",
+  "_npmUser": {
+    "name": "threeday0905",
+    "email": "threeday0905@gmail.com"
+  },
+  "maintainers": [
+    {
+      "name": "threeday0905",
+      "email": "threeday0905@gmail.com"
+    }
+  ],
+  "dist": {
+    "shasum": "08309e0bd9fab1adfa24012de598b03b4e01da36",
+    "size": 6221,
+    "noattachment": false,
+    "key": "args-expect/-/args-expect-0.2.1.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/args-expect/download/args-expect-0.2.1.tgz"
+  },
+  "directories": {},
+  "publish_time": 1408516950089,
+  "_cnpm_publish_time": 1408516950089,
+  "_resolved": "http://registry.npm.alibaba-inc.com/args-expect/download/args-expect-0.2.1.tgz"
+}
