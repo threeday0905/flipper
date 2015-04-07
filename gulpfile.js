@@ -10,39 +10,35 @@ var fs      = require('fs'),
 
 
 var srcFolder  = path.resolve(__dirname, './src'),
-    destFolder = path.resolve(__dirname, './build'),
-    buildTasks;
+    distFolder = path.resolve(__dirname, './build');
 
-buildTasks = (function() {
-    var buildConfig = perrier.load(
-            './src/build.json'
-        );
+
+/* shortcut methods */
+var resolveSrc  = path.resolve.bind(path, srcFolder);
+    /*, resolveDist = path.resolve.bind(path, distFolder); */
+
+
+/* build related tasks */
+var buildTasks = (function() {
+    var buildConfig = perrier.load( resolveSrc('build.json') );
 
     return Object.keys(buildConfig).map(function(taskName) {
-        var destFile = taskName,
-            buildSource = buildConfig[taskName],
-            srcFiles;
+        var srcFiles;
 
-        if ( typeof buildSource === 'string' ) {
-            var targetFolder = path.resolve(srcFolder, buildSource);
-            srcFiles = fs.readdirSync(targetFolder).map(function(fileName) {
-                return path.resolve(targetFolder, fileName);
-            }).sort(function(a, b) {
-                return a > b ? 1 : -1;
+        if (Array.isArray( buildConfig[taskName] )) {
+            srcFiles = buildConfig[taskName].map(function(srcFileName) {
+                return resolveSrc(srcFileName);
             });
-        } else if (Array.isArray(buildSource)) {
-            srcFiles = buildConfig[taskName].map(function(fileName) {
-                return path.resolve(srcFolder, fileName);
-            });
+        } else {
+            throw new Error('build files for ' + taskName + ' must be an array');
         }
 
         return {
-            name:  taskName,
-            dest:  destFile,
-            src:   srcFiles,
-            build: 'build-' + taskName,
+            dist:  taskName, /* dist file name */
+            src:   srcFiles, /* src files */
+            build: 'build-' + taskName, /* build task name */
             alone: 'build-alone-' + taskName,
-            watch: 'watch-' + taskName
+            watch: 'watch-' + taskName  /* watch task name */
         };
     });
 }());
@@ -63,13 +59,13 @@ buildTasks.forEach(function(task, idx) {
         });
 
         return gulp.src(task.src)
-            .pipe(concat(task.dest))
-            .pipe(gulp.dest(destFolder))
+            .pipe(concat(task.dist))
+            .pipe(gulp.dest(distFolder))
             .pipe(uglify())
             .pipe(rename(function(path) {
                 path.basename += '-min';
             }))
-            .pipe(gulp.dest(destFolder));
+            .pipe(gulp.dest(distFolder));
     };
 
     gulp.task(task.build, depTasks, build);
@@ -81,21 +77,6 @@ buildTasks.forEach(function(task, idx) {
 
     buildTasks.buildQueue.push(task.build);
     buildTasks.watchQueue.push(task.watch);
-});
-
-gulp.task('compress', buildTasks.buildQueue, function() {
-    return gulp
-        .src([
-            'build/**/*.js',
-            '!build/vendor/**/*.js',
-            '!build/**/*.min.js',
-            '!build/**/*-min.js'
-        ])
-        .pipe(uglify())
-        .pipe(rename(function (path) {
-            path.basename += '-min';
-        }))
-        .pipe(gulp.dest('./build/'));
 });
 
 gulp.task('build', buildTasks.buildQueue);
