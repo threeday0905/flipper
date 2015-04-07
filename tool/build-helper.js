@@ -70,19 +70,28 @@ function getPackageFile(targetFolder, moduleName) {
 }
 
 function parseConfig(config, rootPath) {
+    if (Array.isArray(config) || typeof config === 'string') {
+        config = {
+            base: rootPath,
+            src: config
+        };
+    }
+
     config.base = path.resolve(rootPath, config.base);
     config.src  = Array.isArray(config.src) ? config.src : [ config.src ];
     config.src  = config.src.map(function(srcFile) {
         return path.resolve(config.base, srcFile);
     });
 
-    checkExists(config.base);
-    checkExists(config.src);
-
     return config;
 }
 
-function checkMultiTasks(number, done) {
+function checkConfig(config) {
+    checkExists(config.base);
+    checkExists(config.src);
+}
+
+function waitingMultiTasks(number, done) {
     if (Array.isArray(number)) {
         number = number.length;
     } else if (typeof number === 'object') {
@@ -92,15 +101,18 @@ function checkMultiTasks(number, done) {
     }
 
     var pending = number;
-    return function doneOne() {
-        pending -= 1;
-        if (pending === 0) {
-            done();
+    return {
+        doneOne: function doneOne() {
+            pending -= 1;
+            if (pending === 0) {
+                done();
+            }
         }
     };
 }
 
-exports.checkExists     = checkExists;
-exports.checkMultiTasks = checkMultiTasks;
-exports.getPackageFile  = getPackageFile;
-exports.parseConfig     = parseConfig;
+exports.checkExists       = checkExists;
+exports.waitingMultiTasks = waitingMultiTasks;
+exports.getPackageFile    = getPackageFile;
+exports.checkConfig       = checkConfig;
+exports.parseConfig       = parseConfig;
