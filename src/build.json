@@ -29,10 +29,10 @@
         "./outro.snippet"
     ],
     "flipper-bundle.js": [
-        "../build/polyfill.js",
-        "../build/flipper.js",
+        "../build/polyfill-debug.js",
+        "../build/flipper-debug.js",
         "../build/vendor/xtemplate/index-standalone-debug.js",
-        "../build/plugins/xtpl.js"
+        "../build/plugins/xtpl-debug.js"
     ]
     /*"vendor/js/jquery.js": [
         "../bower_components/jquery/dist/jquery.js"

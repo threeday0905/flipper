@@ -66,10 +66,14 @@ buildTasks.forEach(function(task, idx) {
 
         return gulp.src(task.src)
             .pipe(concat(task.dist))
+            .pipe(rename(function(path) {
+                path.basename += '-debug';
+            }))
             .pipe(gulp.dest(distFolder))
             .pipe(uglify())
-            .pipe(rename(function(path) {
-                path.basename += '-min';
+            .pipe(rename(function(path){
+                path.basename = /* remove "-debug" */
+                    path.basename.substr(0, path.basename.length -6);
             }))
             .pipe(gulp.dest(distFolder));
     }
