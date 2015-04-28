@@ -515,6 +515,9 @@ Component.prototype = {
             element.modelId = undefined;
             element.model = undefined;
         }
+
+        var destroyEvent = new CustomEvent('destroy');
+        element.dispatchEvent(destroyEvent);
     },
 
     /* attribute changed callback */
