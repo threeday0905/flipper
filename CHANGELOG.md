@@ -1,3 +1,6 @@
+## v0.4.1
+- add destroy() callback
+
 ## v0.4.0
 - upgrade webcomponentsjs to v0.6.0
 - upgrade xtemplate to v4.2.0. ( and fix bug in local version)
