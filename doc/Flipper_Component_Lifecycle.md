@@ -45,23 +45,43 @@ Flipper 生命週期事件說明
 ### adapt()
 
 如果model需要進行預處理才做渲染, 則可以在此事件中處理. 此處回傳回傳的結果只會影響模版渲染, 不會變更實際的model內容.
+    
+定義
+    
+    <web-component name="x-person">
+        <template>
+            <h1>{{full_name}}</h1>
+        </template>
+        <script>
+            Flipper.register({
+                fetch: function() {
+                    return {
+                        first_name: 'john',
+                        last_name: 'lee'
+                    };            
+                },
+                adapt: function(data) {
+                    return {
+                        full_name: data.first_name + data.last_name
+                    };
+                },
+                ready: function() {
+                    console.log(this.model); // { first_name: 'john', last_name: 'lee' }
+                }
+            })
+        </script>
+    </web-component>
+    
+使用
 
-    Flipper.register({
-        fetch: function() {
-            return {
-                first_name: 'john',
-                last_name: 'lee'
-            };            
-        },
-        adapt: function(data) {
-            return {
-                name: data.first_name + data.last_name
-            };
-        },
-        ready: function() {
-            console.log(this.model); // { first_name: 'john', last_name: 'lee' }
-        }
-    })
+    <x-person>
+    
+    =>
+    
+    <x-person>
+        <h1>johnlee</h1>
+    </x-person>
+
 
 ### render()
 
@@ -75,19 +95,21 @@ Flipper 生命週期事件說明
 定義
 
     <web-component name="x-datepicker">
-        Flipper.register({
-            ready: function() {
-                var root = this;
-                var promise = new Promise(resolve, reject) {
-                    setTimeout(function() {
-                        $(root).datepicker();
-                        resolve();
-                    }, 3000);
-                    
-                    return promise;
-                };
-            }
-        })
+        <script>
+            Flipper.register({
+                ready: function() {
+                    var root = this;
+                    var promise = new Promise(resolve, reject) {
+                        setTimeout(function() {
+                            $(root).datepicker();
+                            resolve();
+                        }, 3000);
+                        
+                        return promise;
+                    };
+                }
+            })
+        </script>
     </web-component>
 
 使用
