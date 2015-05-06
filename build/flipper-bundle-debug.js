@@ -3267,7 +3267,7 @@ Component.prototype = {
             .then(this.renderSuccess.bind(this, element))
             .catch(this.renderFail.bind(this, element))
             .then(this.addStyle.bind(this, element))
-            .then(this.renderSuccess.bind(this, element));
+            .then(this.renderComplete.bind(this, element));
 
     },
     renderBegin: function(element) {
