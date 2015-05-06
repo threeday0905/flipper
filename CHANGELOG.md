@@ -1,5 +1,6 @@
 ## v0.4.1
 - add destroy() callback
+- add fail & initialized callback event
 
 ## v0.4.0
 - upgrade webcomponentsjs to v0.6.0
