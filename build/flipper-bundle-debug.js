@@ -3081,9 +3081,10 @@ function createElementProto(component) {
                 return Promise.resolve()
                         .then(component.renderBegin.bind(component, element))
                         .then(handleRefresh)
-                        .then(component.renderEnd.bind(component, element))
+                        .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
-                        .catch(component.renderFail.bind(component, element));
+                        .catch(component.renderFail.bind(component, element))
+                        .then(component.renderComplete.bind(component, element));
             }
         },
         createdCallback: {
@@ -3263,9 +3264,10 @@ Component.prototype = {
             .then(this.renderBegin.bind(this, element))
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
-            .then(this.renderEnd.bind(this, element))
+            .then(this.renderSuccess.bind(this, element))
             .catch(this.renderFail.bind(this, element))
-            .then(this.addStyle.bind(this, element));
+            .then(this.addStyle.bind(this, element))
+            .then(this.renderSuccess.bind(this, element));
 
     },
     renderBegin: function(element) {
@@ -3372,16 +3374,19 @@ Component.prototype = {
             element.dispatchEvent(readyEvent);
         });
     },
-    renderEnd: function(element) {
+    renderSuccess: function(element) {
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
             element.removeAttribute('unresolved');
             var readyEvent = new CustomEvent('ready');
             element.dispatchEvent(readyEvent);
-
-            //$(element).trigger('ready');
         });
+    },
+
+    renderComplete: function(element) {
+        var completeEvent = new CustomEvent('complete');
+        element.dispatchEvent(completeEvent);
     },
 
     /* detach cycle methods */
