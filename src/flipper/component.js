@@ -504,7 +504,7 @@ Component.prototype = {
     },
 
     renderComplete: function(element) {
-        var completeEvent = new CustomEvent('complete');
+        var completeEvent = new CustomEvent('initialized');
         element.dispatchEvent(completeEvent);
     },
 
