@@ -83,23 +83,19 @@ var PUBLIC_LIFE_EVENTS = [
 
 function mixinElementProto(component, elementProto) {
     var targetProto = component.elementProto;
+    utils.each(elementProto, function(val, key) {
+        var descriptor = utils.getDescriptor(elementProto, key);
 
-    Object.getOwnPropertyNames(elementProto).forEach(function(name) {
-        if (name === 'model') {
+        if (key === 'model') {
             targetProto.model = elementProto.model;
-        } else if (LIFE_EVENTS.lastIndexOf(name) > -1 ) {
-            Object.defineProperty(targetProto._lifeCycle, name,
-                Object.getOwnPropertyDescriptor(elementProto, name)
-            );
-            if (PUBLIC_LIFE_EVENTS.lastIndexOf(name) > -1 ) {
-                Object.defineProperty(targetProto, name,
-                    Object.getOwnPropertyDescriptor(elementProto, name)
-                );
+        } else if (LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+            utils.defineProperty(targetProto._lifeCycle, key, descriptor);
+
+            if (PUBLIC_LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+                utils.defineProperty(targetProto, key, descriptor);
             }
         } else {
-            Object.defineProperty(targetProto, name,
-                Object.getOwnPropertyDescriptor(elementProto, name)
-            );
+            utils.defineProperty(targetProto, key, descriptor);
         }
     });
 }
@@ -119,7 +115,7 @@ function tryCallLifeCycleEvent(element, methodName, args) {
 }
 
 function createElementProto(component) {
-    var elementProto = Object.create(HTMLElement.prototype);
+    var elementProto = utils.createObject(HTMLElement.prototype);
 
     elementProto._lifeCycle = {};
 
@@ -129,7 +125,7 @@ function createElementProto(component) {
             callback.call(component, this, arguments);
         };
     }
-    Object.defineProperties(elementProto, {
+    utils.defineProperties(elementProto, {
         model: {
             value: undefined,
             writable: true

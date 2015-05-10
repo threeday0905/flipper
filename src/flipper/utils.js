@@ -32,13 +32,7 @@ utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-utils.mixin = function mixin(to, from) {
-    Object.getOwnPropertyNames(from).forEach(function(name) {
-        Object.defineProperty(to, name,
-            Object.getOwnPropertyDescriptor(from, name)
-        );
-    });
-};
+
 
 utils.log = function log() {
     var msg = utils.format.apply(utils, arguments);
@@ -47,6 +41,85 @@ utils.log = function log() {
     }
 };
 
+function doesGetOwnPropertyDescriptorWork(object) {
+    try {
+        object.sentinel = 0;
+        return Object.getOwnPropertyDescriptor(object, 'sentinel').value === 0;
+    } catch (exception) {
+        return false;
+    }
+}
+
+var supportES5Property =
+    doesGetOwnPropertyDescriptorWork({}) &&
+    doesGetOwnPropertyDescriptorWork(document.createElement('div'));
+
+utils.mixin = function mixin(to, from) {
+    if (!to) {
+        return;
+    }
+    if (supportES5Property) {
+        Object.getOwnPropertyNames(from).forEach(function(name) {
+            Object.defineProperty(to, name,
+                Object.getOwnPropertyDescriptor(from, name)
+            );
+        });
+    } else {
+        for (var key in from) {
+            if (from.hasOwnProperty(key)) {
+                to[key] = from[key];
+            }
+        }
+    }
+};
+
+utils.defineProperty = function(obj, name, descriptor) {
+    if (supportES5Property) {
+        Object.defineProperty(obj, name, descriptor);
+    } else {
+        obj[name] = descriptor.value;
+    }
+};
+
+utils.getDescriptor = function(obj, name) {
+    if (supportES5Property) {
+        return Object.getOwnPropertyDescriptor(obj, name);
+    } else {
+        return {
+            value: obj[name]
+        };
+    }
+};
+
+utils.defineProperties = function(obj, properties) {
+    if (supportES5Property) {
+        Object.defineProperties(obj, properties);
+    } else {
+        utils.each(properties, function(descriptor, key) {
+            utils.defineProperty(obj, key, descriptor);
+        });
+    }
+};
+
+utils.createObject = Object.create && supportES5Property ?
+    Object.create : (function() {
+        var Temp = function() {};
+        return function(prototype, propertiesObject) {
+            if (arguments.length > 1) {
+                throw Error('Second argument not supported');
+            }
+
+            Temp.prototype = prototype;
+            var result = new Temp();
+            Temp.prototype = null;
+
+            if (propertiesObject) {
+                utils.defineProperties(result, propertiesObject);
+            }
+
+            return result;
+        };
+    }());
 
 utils.resolveUri = function(target, baseUri) {
     //return new URL(target, baseUri).toString();

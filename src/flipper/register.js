@@ -285,7 +285,7 @@ function registerFromDeclarationTag(ele) {
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
 document.registerElement(Flipper.configs.declarationTag /* web-component */, {
-    prototype: Object.create(HTMLElement.prototype, {
+    prototype: utils.createObject(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
                 registerFromDeclarationTag(this);
