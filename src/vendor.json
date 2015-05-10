@@ -36,5 +36,11 @@
     "xtemplate": {
         "base": "../node_modules/xtemplate/build",
         "src": "*.js"
+    },
+    "es5-shim": {
+        "base": "../node_modules/es5-shim/",
+        "src": [
+            "*.{js,map}"
+        ]
     }
 }

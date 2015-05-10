@@ -1,6 +1,6 @@
 {
   "name": "xtemplate",
-  "version": "4.2.0",
+  "version": "4.2.4",
   "author": {
     "name": "yiminghe",
     "email": "yiminghe@gmail.com"
@@ -62,15 +62,15 @@
     "browser-test": "rc-tools run browser-test",
     "browser-test-cover": "rc-tools run browser-test-cover"
   },
-  "gitHead": "d3131f0abdcf44132afb8679395c890aedb1aefc",
+  "gitHead": "d8bca9dca1a0ba81c227c36aba6b531c9d02a8d4",
   "description": "---",
   "bugs": {
     "url": "https://github.com/xtemplate/xtemplate/issues"
   },
   "homepage": "https://github.com/xtemplate/xtemplate",
-  "_id": "xtemplate@4.2.0",
-  "_shasum": "c699711d6facd1611778f70ea8cc77c8650238e8",
-  "_from": "xtemplate@*",
+  "_id": "xtemplate@4.2.4",
+  "_shasum": "d4ca898dcfe127a1fc03053cdf4a490c057ef646",
+  "_from": "xtemplate@latest",
   "_npmVersion": "2.5.1",
   "_nodeVersion": "0.12.0",
   "_npmUser": {
@@ -79,23 +79,18 @@
   },
   "maintainers": [
     {
-      "name": "dead_horse",
-      "email": "dead_horse@qq.com"
-    },
-    {
       "name": "yiminghe",
       "email": "yiminghe@gmail.com"
+    },
+    {
+      "name": "dead_horse",
+      "email": "dead_horse@qq.com"
     }
   ],
   "dist": {
-    "shasum": "c699711d6facd1611778f70ea8cc77c8650238e8",
-    "size": 71175,
-    "noattachment": false,
-    "key": "xtemplate/-/xtemplate-4.2.0.tgz",
-    "tarball": "http://registry.npm.alibaba-inc.com/xtemplate/download/xtemplate-4.2.0.tgz"
+    "shasum": "d4ca898dcfe127a1fc03053cdf4a490c057ef646",
+    "tarball": "http://registry.npmjs.org/xtemplate/-/xtemplate-4.2.4.tgz"
   },
   "directories": {},
-  "publish_time": 1427364956144,
-  "_cnpm_publish_time": 1427364956144,
-  "_resolved": "http://registry.npm.alibaba-inc.com/xtemplate/download/xtemplate-4.2.0.tgz"
+  "_resolved": "http://registry.npmjs.org/xtemplate/-/xtemplate-4.2.4.tgz"
 }

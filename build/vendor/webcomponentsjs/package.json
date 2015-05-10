@@ -1,6 +1,6 @@
 {
   "name": "webcomponents.js",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "webcomponents.js",
   "main": "webcomponents.js",
   "directories": {
@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/webcomponents/webcomponentsjs.git"
+    "url": "git+https://github.com/webcomponents/webcomponentsjs.git"
   },
   "author": {
     "name": "The Polymer Authors"
@@ -30,13 +30,13 @@
     "run-sequence": "^1.0.1",
     "web-component-tester": "*"
   },
-  "gitHead": "af3bdd38cc9374623d3ec961b003bb0b5d2a26a7",
-  "_id": "webcomponents.js@0.6.0",
+  "gitHead": "2a1003f895dc55510015898809deefc419899011",
+  "_id": "webcomponents.js@0.6.1",
   "scripts": {},
-  "_shasum": "6dcb0e14e3ce01be1177d1d9e6946920bc370657",
-  "_from": "webcomponents.js@*",
-  "_npmVersion": "2.7.1",
-  "_nodeVersion": "1.6.1",
+  "_shasum": "28e0bdf228620eb08e8674dcec258bdad9a64220",
+  "_from": "webcomponents.js@latest",
+  "_npmVersion": "2.8.3",
+  "_nodeVersion": "1.8.1",
   "_npmUser": {
     "name": "azakus",
     "email": "dfreedm2@gmail.com"
@@ -52,13 +52,8 @@
     }
   ],
   "dist": {
-    "shasum": "6dcb0e14e3ce01be1177d1d9e6946920bc370657",
-    "size": 168532,
-    "noattachment": false,
-    "key": "webcomponents.js/-/webcomponents.js-0.6.0.tgz",
-    "tarball": "http://registry.npm.alibaba-inc.com/webcomponents.js/download/webcomponents.js-0.6.0.tgz"
+    "shasum": "28e0bdf228620eb08e8674dcec258bdad9a64220",
+    "tarball": "http://registry.npmjs.org/webcomponents.js/-/webcomponents.js-0.6.1.tgz"
   },
-  "publish_time": 1426889036377,
-  "_cnpm_publish_time": 1426889036377,
-  "_resolved": "http://registry.npm.alibaba-inc.com/webcomponents.js/download/webcomponents.js-0.6.0.tgz"
+  "_resolved": "http://registry.npmjs.org/webcomponents.js/-/webcomponents.js-0.6.1.tgz"
 }

@@ -1,25 +1,25 @@
 /*
-Copyright 2015, xtemplate@4.2.0
+Copyright 2015, xtemplate@4.2.4
 MIT Licensed
-build time: Tue, 07 Apr 2015 05:40:50 GMT
+build time: Thu, 07 May 2015 09:21:25 GMT
 */
 var XTemplate = (function(){ var module = {};
 
 /*
 combined modules:
-xtemplate/4.2.0/index
-xtemplate/4.2.0/runtime
-xtemplate/4.2.0/runtime/util
-xtemplate/4.2.0/runtime/commands
-xtemplate/4.2.0/runtime/scope
-xtemplate/4.2.0/runtime/linked-buffer
-xtemplate/4.2.0/compiler
-xtemplate/4.2.0/compiler/tools
-xtemplate/4.2.0/compiler/parser
-xtemplate/4.2.0/compiler/ast
+xtemplate/4.2.4/index
+xtemplate/4.2.4/runtime
+xtemplate/4.2.4/runtime/util
+xtemplate/4.2.4/runtime/commands
+xtemplate/4.2.4/runtime/scope
+xtemplate/4.2.4/runtime/linked-buffer
+xtemplate/4.2.4/compiler
+xtemplate/4.2.4/compiler/tools
+xtemplate/4.2.4/compiler/parser
+xtemplate/4.2.4/compiler/ast
 */
-var xtemplate420RuntimeUtil, xtemplate420RuntimeScope, xtemplate420RuntimeLinkedBuffer, xtemplate420CompilerTools, xtemplate420CompilerParser, xtemplate420CompilerAst, xtemplate420RuntimeCommands, xtemplate420Runtime, xtemplate420Compiler, xtemplate420Index;
-xtemplate420RuntimeUtil = function (exports) {
+var xtemplate424RuntimeUtil, xtemplate424RuntimeScope, xtemplate424RuntimeLinkedBuffer, xtemplate424CompilerTools, xtemplate424CompilerParser, xtemplate424CompilerAst, xtemplate424RuntimeCommands, xtemplate424Runtime, xtemplate424Compiler, xtemplate424Index;
+xtemplate424RuntimeUtil = function (exports) {
   // http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
   // http://wonko.com/post/html-escaping
   var htmlEntities = {
@@ -138,7 +138,7 @@ xtemplate420RuntimeUtil = function (exports) {
   };
   return exports;
 }();
-xtemplate420RuntimeScope = function (exports) {
+xtemplate424RuntimeScope = function (exports) {
   function Scope(data, affix, parent) {
     if (data !== undefined) {
       this.data = data;
@@ -223,6 +223,9 @@ xtemplate420RuntimeScope = function (exports) {
         return undefined;
       }
       for (i = 1; i < len; i++) {
+        if (v == null) {
+          return v;
+        }
         v = v[parts[i]];
       }
       return v;
@@ -289,8 +292,8 @@ xtemplate420RuntimeScope = function (exports) {
   exports = Scope;
   return exports;
 }();
-xtemplate420RuntimeLinkedBuffer = function (exports) {
-  var util = xtemplate420RuntimeUtil;
+xtemplate424RuntimeLinkedBuffer = function (exports) {
+  var util = xtemplate424RuntimeUtil;
   function Buffer(list, next, tpl) {
     this.list = list;
     this.init();
@@ -414,7 +417,7 @@ xtemplate420RuntimeLinkedBuffer = function (exports) {
   exports = LinkedBuffer;
   return exports;
 }();
-xtemplate420CompilerTools = function (exports) {
+xtemplate424CompilerTools = function (exports) {
   var doubleReg = /\\*"/g;
   var singleReg = /\\*'/g;
   var arrayPush = [].push;
@@ -541,7 +544,7 @@ xtemplate420CompilerTools = function (exports) {
   };
   return exports;
 }();
-xtemplate420CompilerParser = function (exports) {
+xtemplate424CompilerParser = function (exports) {
   var parser = function (undefined) {
     var parser = {};
     var GrammarConst = {
@@ -6350,7 +6353,7 @@ xtemplate420CompilerParser = function (exports) {
   }
   return exports;
 }();
-xtemplate420CompilerAst = function (exports) {
+xtemplate424CompilerAst = function (exports) {
   var ast = {};
   function sameArray(a1, a2) {
     var l1 = a1.length, l2 = a2.length;
@@ -6498,9 +6501,9 @@ xtemplate420CompilerAst = function (exports) {
   exports = ast;
   return exports;
 }();
-xtemplate420RuntimeCommands = function (exports) {
-  var Scope = xtemplate420RuntimeScope;
-  var util = xtemplate420RuntimeUtil;
+xtemplate424RuntimeCommands = function (exports) {
+  var Scope = xtemplate424RuntimeScope;
+  var util = xtemplate424RuntimeUtil;
   var commands = {
     range: function (scope, option) {
       var params = option.params;
@@ -6733,12 +6736,12 @@ xtemplate420RuntimeCommands = function (exports) {
   exports = commands;
   return exports;
 }();
-xtemplate420Runtime = function (exports) {
-  var util = xtemplate420RuntimeUtil;
-  var nativeCommands = xtemplate420RuntimeCommands;
+xtemplate424Runtime = function (exports) {
+  var util = xtemplate424RuntimeUtil;
+  var nativeCommands = xtemplate424RuntimeCommands;
   var commands = {};
-  var Scope = xtemplate420RuntimeScope;
-  var LinkedBuffer = xtemplate420RuntimeLinkedBuffer;
+  var Scope = xtemplate424RuntimeScope;
+  var LinkedBuffer = xtemplate424RuntimeLinkedBuffer;
   function TplWrap(name, runtime, root, scope, buffer, originalName, fn, parent) {
     this.name = name;
     this.originalName = originalName || name;
@@ -6790,7 +6793,12 @@ xtemplate420Runtime = function (exports) {
     if (command1) {
       return command1.call(tpl, scope, option, buffer);
     } else if (command1 !== false) {
-      caller = scope.resolve(parts.slice(0, -1), depth);
+      var callerParts = parts.slice(0, -1);
+      caller = scope.resolve(callerParts, depth);
+      if (caller == null) {
+        buffer.error('Execute function `' + parts.join('.') + '` Error: ' + callerParts.join('.') + ' is undefined or null');
+        return buffer;
+      }
       fn = caller[parts[parts.length - 1]];
       if (fn) {
         try {
@@ -7023,9 +7031,9 @@ xtemplate420Runtime = function (exports) {
   exports = XTemplateRuntime;
   return exports;
 }();
-xtemplate420Compiler = function (exports) {
-  var util = xtemplate420Runtime.util;
-  var compilerTools = xtemplate420CompilerTools;
+xtemplate424Compiler = function (exports) {
+  var util = xtemplate424Runtime.util;
+  var compilerTools = xtemplate424CompilerTools;
   var pushToArray = compilerTools.pushToArray;
   var wrapByDoubleQuote = compilerTools.wrapByDoubleQuote;
   var TMP_DECLARATION = ['var t;'];
@@ -7068,9 +7076,9 @@ xtemplate420Compiler = function (exports) {
   var BUFFER_APPEND = 'buffer.data += {value};';
   var BUFFER_WRITE_ESCAPED = 'buffer = buffer.writeEscaped({value});';
   var RETURN_BUFFER = 'return buffer;';
-  var XTemplateRuntime = xtemplate420Runtime;
-  var parser = xtemplate420CompilerParser;
-  parser.yy = xtemplate420CompilerAst;
+  var XTemplateRuntime = xtemplate424Runtime;
+  var parser = xtemplate424CompilerParser;
+  parser.yy = xtemplate424CompilerAst;
   var nativeCode = [];
   var substitute = util.substitute;
   var each = util.each;
@@ -7083,6 +7091,17 @@ xtemplate420Compiler = function (exports) {
     nativeCode.push(substitute(DECLARE_NATIVE_COMMANDS, { name: name }));
   });
   nativeCode = nativeCode.join('\n');
+  var lastLine = 1;
+  function markLine(pos, source) {
+    if (lastLine === pos.line) {
+      return;
+    }
+    lastLine = pos.line;
+    source.push('pos.line = ' + pos.line + ';');
+  }
+  function resetGlobal() {
+    lastLine = 1;
+  }
   function getFunctionDeclare(functionName) {
     return [
       'function ' + functionName + '(scope, buffer, undefined) {',
@@ -7119,14 +7138,6 @@ xtemplate420Compiler = function (exports) {
       exp: exp,
       source: source
     };
-  }
-  var lastLine = 1;
-  function markLine(pos, source) {
-    if (lastLine === pos.line) {
-      return;
-    }
-    lastLine = pos.line;
-    source.push('pos.line = ' + pos.line + ';');
   }
   function genFunction(self, statements) {
     var functionName = guid(self, 'func');
@@ -7601,6 +7612,7 @@ xtemplate420Compiler = function (exports) {
       });
     },
     compileToJson: function (param) {
+      resetGlobal();
       var name = param.name = param.name || 'xtemplate' + ++anonymousCount;
       var content = param.content;
       var root = compiler.parse(content, name);
@@ -7617,10 +7629,10 @@ xtemplate420Compiler = function (exports) {
   exports = compiler;
   return exports;
 }();
-xtemplate420Index = function (exports) {
-  var XTemplateRuntime = xtemplate420Runtime;
+xtemplate424Index = function (exports) {
+  var XTemplateRuntime = xtemplate424Runtime;
   var util = XTemplateRuntime.util;
-  var Compiler = xtemplate420Compiler;
+  var Compiler = xtemplate424Compiler;
   var compile = Compiler.compile;
   function XTemplate(tpl, config) {
     var tplType = typeof tpl;
@@ -7672,5 +7684,5 @@ xtemplate420Index = function (exports) {
   });
   return exports;
 }();
-return xtemplate420Index;
+return xtemplate424Index;
 })();
