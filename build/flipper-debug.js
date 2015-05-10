@@ -84,13 +84,7 @@ utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-utils.mixin = function mixin(to, from) {
-    Object.getOwnPropertyNames(from).forEach(function(name) {
-        Object.defineProperty(to, name,
-            Object.getOwnPropertyDescriptor(from, name)
-        );
-    });
-};
+
 
 utils.log = function log() {
     var msg = utils.format.apply(utils, arguments);
@@ -99,6 +93,85 @@ utils.log = function log() {
     }
 };
 
+function doesGetOwnPropertyDescriptorWork(object) {
+    try {
+        object.sentinel = 0;
+        return Object.getOwnPropertyDescriptor(object, 'sentinel').value === 0;
+    } catch (exception) {
+        return false;
+    }
+}
+
+var supportES5Property =
+    doesGetOwnPropertyDescriptorWork({}) &&
+    doesGetOwnPropertyDescriptorWork(document.createElement('div'));
+
+utils.mixin = function mixin(to, from) {
+    if (!to) {
+        return;
+    }
+    if (supportES5Property) {
+        Object.getOwnPropertyNames(from).forEach(function(name) {
+            Object.defineProperty(to, name,
+                Object.getOwnPropertyDescriptor(from, name)
+            );
+        });
+    } else {
+        for (var key in from) {
+            if (from.hasOwnProperty(key)) {
+                to[key] = from[key];
+            }
+        }
+    }
+};
+
+utils.defineProperty = function(obj, name, descriptor) {
+    if (supportES5Property) {
+        Object.defineProperty(obj, name, descriptor);
+    } else {
+        obj[name] = descriptor.value;
+    }
+};
+
+utils.getDescriptor = function(obj, name) {
+    if (supportES5Property) {
+        return Object.getOwnPropertyDescriptor(obj, name);
+    } else {
+        return {
+            value: obj[name]
+        };
+    }
+};
+
+utils.defineProperties = function(obj, properties) {
+    if (supportES5Property) {
+        Object.defineProperties(obj, properties);
+    } else {
+        utils.each(properties, function(descriptor, key) {
+            utils.defineProperty(obj, key, descriptor);
+        });
+    }
+};
+
+utils.createObject = Object.create && supportES5Property ?
+    Object.create : (function() {
+        var Temp = function() {};
+        return function(prototype, propertiesObject) {
+            if (arguments.length > 1) {
+                throw Error('Second argument not supported');
+            }
+
+            Temp.prototype = prototype;
+            var result = new Temp();
+            Temp.prototype = null;
+
+            if (propertiesObject) {
+                utils.defineProperties(result, propertiesObject);
+            }
+
+            return result;
+        };
+    }());
 
 utils.resolveUri = function(target, baseUri) {
     //return new URL(target, baseUri).toString();
@@ -456,23 +529,19 @@ var PUBLIC_LIFE_EVENTS = [
 
 function mixinElementProto(component, elementProto) {
     var targetProto = component.elementProto;
+    utils.each(elementProto, function(val, key) {
+        var descriptor = utils.getDescriptor(elementProto, key);
 
-    Object.getOwnPropertyNames(elementProto).forEach(function(name) {
-        if (name === 'model') {
+        if (key === 'model') {
             targetProto.model = elementProto.model;
-        } else if (LIFE_EVENTS.lastIndexOf(name) > -1 ) {
-            Object.defineProperty(targetProto._lifeCycle, name,
-                Object.getOwnPropertyDescriptor(elementProto, name)
-            );
-            if (PUBLIC_LIFE_EVENTS.lastIndexOf(name) > -1 ) {
-                Object.defineProperty(targetProto, name,
-                    Object.getOwnPropertyDescriptor(elementProto, name)
-                );
+        } else if (LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+            utils.defineProperty(targetProto._lifeCycle, key, descriptor);
+
+            if (PUBLIC_LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+                utils.defineProperty(targetProto, key, descriptor);
             }
         } else {
-            Object.defineProperty(targetProto, name,
-                Object.getOwnPropertyDescriptor(elementProto, name)
-            );
+            utils.defineProperty(targetProto, key, descriptor);
         }
     });
 }
@@ -492,7 +561,7 @@ function tryCallLifeCycleEvent(element, methodName, args) {
 }
 
 function createElementProto(component) {
-    var elementProto = Object.create(HTMLElement.prototype);
+    var elementProto = utils.createObject(HTMLElement.prototype);
 
     elementProto._lifeCycle = {};
 
@@ -502,7 +571,7 @@ function createElementProto(component) {
             callback.call(component, this, arguments);
         };
     }
-    Object.defineProperties(elementProto, {
+    utils.defineProperties(elementProto, {
         model: {
             value: undefined,
             writable: true
@@ -1222,7 +1291,7 @@ function registerFromDeclarationTag(ele) {
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
 document.registerElement(Flipper.configs.declarationTag /* web-component */, {
-    prototype: Object.create(HTMLElement.prototype, {
+    prototype: utils.createObject(HTMLElement.prototype, {
         createdCallback: {
             value: function() {
                 registerFromDeclarationTag(this);
