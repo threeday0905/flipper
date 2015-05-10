@@ -289,9 +289,12 @@ Component.prototype = {
     initialize: function() {
         throwIfAlreadyRegistered(this);
         this.prepare(this.definition.proto);
-        document.registerElement(this.name, {
-            prototype: this.elementProto
-        });
+
+        if (document.registerElement) {
+            document.registerElement(this.name, {
+                prototype: this.elementProto
+            });
+        }
 
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.definition = null;

@@ -284,15 +284,17 @@ function registerFromDeclarationTag(ele) {
  */
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
-document.registerElement(Flipper.configs.declarationTag /* web-component */, {
-    prototype: utils.createObject(HTMLElement.prototype, {
-        createdCallback: {
-            value: function() {
-                registerFromDeclarationTag(this);
+if (document.registerElement) {
+    document.registerElement(Flipper.configs.declarationTag /* web-component */, {
+        prototype: utils.createObject(HTMLElement.prototype, {
+            createdCallback: {
+                value: function() {
+                    registerFromDeclarationTag(this);
+                }
             }
-        }
-    })
-});
+        })
+    });
+}
 
 if (window.FlipperPolyfill) {
     window.FlipperPolyfill.flushDeclaration(Flipper.register.bind(Flipper));
