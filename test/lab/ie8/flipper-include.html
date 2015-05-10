@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flipper UI - demo</title>
+    <meta charset="utf-8" />
+
+    <meta content="webkit" name="renderer">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <script src="../../build/flipper-bundle-debug.js"></script>
+
+    <!-- 載入組件需要的組件 -->
+</head>
+
+<body>
+    <h1 id="flipper">N/A</h1>
+    <script>
+        if (Flipper) {
+            document.getElementById('flipper').innerHTML = 'Flipper';
+        }
+    </script>
+</body>
+
+</html>
