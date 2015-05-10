@@ -3237,9 +3237,12 @@ Component.prototype = {
     initialize: function() {
         throwIfAlreadyRegistered(this);
         this.prepare(this.definition.proto);
-        document.registerElement(this.name, {
-            prototype: this.elementProto
-        });
+
+        if (document.registerElement) {
+            document.registerElement(this.name, {
+                prototype: this.elementProto
+            });
+        }
 
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.definition = null;
@@ -3792,15 +3795,17 @@ function registerFromDeclarationTag(ele) {
  */
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
-document.registerElement(Flipper.configs.declarationTag /* web-component */, {
-    prototype: utils.createObject(HTMLElement.prototype, {
-        createdCallback: {
-            value: function() {
-                registerFromDeclarationTag(this);
+if (document.registerElement) {
+    document.registerElement(Flipper.configs.declarationTag /* web-component */, {
+        prototype: utils.createObject(HTMLElement.prototype, {
+            createdCallback: {
+                value: function() {
+                    registerFromDeclarationTag(this);
+                }
             }
-        }
-    })
-});
+        })
+    });
+}
 
 if (window.FlipperPolyfill) {
     window.FlipperPolyfill.flushDeclaration(Flipper.register.bind(Flipper));
