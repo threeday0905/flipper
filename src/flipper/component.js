@@ -201,7 +201,7 @@ function createElementProto(component) {
                         .then(handleRefresh)
                         .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
-                        .catch(component.renderFail.bind(component, element))
+                        ['catch'](component.renderFail.bind(component, element))
                         .then(component.renderComplete.bind(component, element));
             }
         },
@@ -386,7 +386,7 @@ Component.prototype = {
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
             .then(this.renderSuccess.bind(this, element))
-            .catch(this.renderFail.bind(this, element))
+            ['catch'](this.renderFail.bind(this, element))
             .then(this.addStyle.bind(this, element))
             .then(this.renderComplete.bind(this, element));
 
