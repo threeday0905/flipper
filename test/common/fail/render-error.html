@@ -13,6 +13,9 @@
         Flipper.register({
             fetch: function() {
                 throw new Error('fetch error');
+            },
+            fail: function() {
+                this.innerHTML = 'SYNC RENDER FAILDED';
             }
         });
     </script>

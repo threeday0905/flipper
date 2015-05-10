@@ -9,11 +9,33 @@
 
     <link rel="import" href="./fail/render-error.html">
     <link rel="import" href="./fail/register-error.html">
+    <link rel="import" href="./fail/render-error-async.html">
 </head>
 
 <body>
     <t-render-error></t-render-error>
+    <t-render-error-async></t-render-error-async>
     <t-register-error></t-register-error>
+
+    <script>
+        require(['lib/jquery/2.1.3/'], function($) {
+            $('t-render-error-async').on('fail', function() {
+                console.log('render fail called');
+            });
+
+            $('t-render-error-async').on('initialized', function() {
+                console.log('render initialized called');
+            });
+
+            $('t-render-error').on('fail', function() {
+                console.log('render fail called');
+            });
+
+            $('t-render-error').on('initialized', function() {
+                console.log('render initialized called');
+            });
+        });
+    </script>
 </body>
 
 </html>
