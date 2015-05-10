@@ -193,7 +193,7 @@
  * Code distributed by Google as part of the polymer project is also
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
-// @version 0.6.0
+// @version 0.6.1
 window.WebComponents = window.WebComponents || {};
 
 (function(scope) {
@@ -212,7 +212,7 @@ window.WebComponents = window.WebComponents || {};
         }
       }
     }
-    if (flags.log) {
+    if (flags.log && flags.log.split) {
       var parts = flags.log.split(",");
       flags.log = {};
       parts.forEach(function(f) {
@@ -649,6 +649,9 @@ window.WebComponents = window.WebComponents || {};
     parse.call(this, input, null, base);
   }
   jURL.prototype = {
+    toString: function() {
+      return this.href;
+    },
     get href() {
       if (this._isInvalid) return this._url;
       var authority = "";
@@ -1868,13 +1871,10 @@ CustomElements.addModule(function(scope) {
       root = root.olderShadowRoot;
     }
   }
-  var processingDocuments;
   function forDocumentTree(doc, cb) {
-    processingDocuments = [];
-    _forDocumentTree(doc, cb);
-    processingDocuments = null;
+    _forDocumentTree(doc, cb, []);
   }
-  function _forDocumentTree(doc, cb) {
+  function _forDocumentTree(doc, cb, processingDocuments) {
     doc = wrap(doc);
     if (processingDocuments.indexOf(doc) >= 0) {
       return;
@@ -1883,7 +1883,7 @@ CustomElements.addModule(function(scope) {
     var imports = doc.querySelectorAll("link[rel=" + IMPORT_LINK_TYPE + "]");
     for (var i = 0, l = imports.length, n; i < l && (n = imports[i]); i++) {
       if (n.import) {
-        _forDocumentTree(n.import, cb);
+        _forDocumentTree(n.import, cb, processingDocuments);
       }
     }
     cb(doc);
@@ -2149,8 +2149,9 @@ CustomElements.addModule(function(scope) {
 });
 
 CustomElements.addModule(function(scope) {
+  var isIE11OrOlder = scope.isIE11OrOlder;
   var upgradeDocumentTree = scope.upgradeDocumentTree;
-  var upgrade = scope.upgrade;
+  var upgradeAll = scope.upgradeAll;
   var upgradeWithDefinition = scope.upgradeWithDefinition;
   var implementPrototype = scope.implementPrototype;
   var useNative = scope.useNative;
@@ -2300,14 +2301,8 @@ CustomElements.addModule(function(scope) {
     }
     return element;
   }
-  function cloneNode(deep) {
-    var n = domCloneNode.call(this, deep);
-    upgrade(n);
-    return n;
-  }
   var domCreateElement = document.createElement.bind(document);
   var domCreateElementNS = document.createElementNS.bind(document);
-  var domCloneNode = Node.prototype.cloneNode;
   var isInstance;
   if (!Object.__proto__ && !useNative) {
     isInstance = function(obj, ctor) {
@@ -2325,21 +2320,16 @@ CustomElements.addModule(function(scope) {
       return obj instanceof base;
     };
   }
-  document.registerElement = register;
-  document.createElement = createElement;
-  document.createElementNS = createElementNS;
-  Node.prototype.cloneNode = cloneNode;
-  scope.registry = registry;
-  scope.instanceof = isInstance;
-  scope.reservedTagList = reservedTagList;
-  scope.getRegisteredDefinition = getRegisteredDefinition;
-  document.register = document.registerElement;
-});
-
-(function(scope) {
-  var useNative = scope.useNative;
-  var initializeModules = scope.initializeModules;
-  var isIE11OrOlder = /Trident/.test(navigator.userAgent);
+  function wrapDomMethodToForceUpgrade(obj, methodName) {
+    var orig = obj[methodName];
+    obj[methodName] = function() {
+      var n = orig.apply(this, arguments);
+      upgradeAll(n);
+      return n;
+    };
+  }
+  wrapDomMethodToForceUpgrade(Node.prototype, "cloneNode");
+  wrapDomMethodToForceUpgrade(document, "importNode");
   if (isIE11OrOlder) {
     (function() {
       var importNode = document.importNode;
@@ -2355,6 +2345,20 @@ CustomElements.addModule(function(scope) {
       };
     })();
   }
+  document.registerElement = register;
+  document.createElement = createElement;
+  document.createElementNS = createElementNS;
+  scope.registry = registry;
+  scope.instanceof = isInstance;
+  scope.reservedTagList = reservedTagList;
+  scope.getRegisteredDefinition = getRegisteredDefinition;
+  document.register = document.registerElement;
+});
+
+(function(scope) {
+  var useNative = scope.useNative;
+  var initializeModules = scope.initializeModules;
+  var isIE11OrOlder = /Trident/.test(navigator.userAgent);
   if (useNative) {
     var nop = function() {};
     scope.watchShadow = nop;
@@ -2415,6 +2419,7 @@ CustomElements.addModule(function(scope) {
     var loadEvent = window.HTMLImports && !HTMLImports.ready ? "HTMLImportsLoaded" : "DOMContentLoaded";
     window.addEventListener(loadEvent, bootstrap);
   }
+  scope.isIE11OrOlder = isIE11OrOlder;
 })(window.CustomElements);
 
 if (typeof HTMLTemplateElement === "undefined") {
@@ -2526,35 +2531,6 @@ if (!document._currentScript) {
     Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
 }
 
-if (!String.prototype.startsWith) {
-    Object.defineProperty(String.prototype, 'startsWith', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: function(searchString, position) {
-            position = position || 0;
-            return this.lastIndexOf(searchString, position) === position;
-        }
-    });
-}
-
-if (!String.prototype.endsWith) {
-    Object.defineProperty(String.prototype, 'endsWith', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: function(searchString, position) {
-            var subjectString = this.toString();
-            if (position === undefined || position > subjectString.length) {
-                position = subjectString.length;
-            }
-            position -= searchString.length;
-            var lastIndex = subjectString.indexOf(searchString, position);
-            return lastIndex !== -1 && lastIndex === position;
-        }
-    });
-}
-
 var configs = {
     templateEngine: 'default',
     injectionMode:  'light-dom',
@@ -2580,12 +2556,30 @@ var utils = {};
 
 utils.noop = function() {};
 
+utils.each = function(obj, fn) {
+    if (utils.isArray(obj)) {
+        for (var i = 0, len = obj.length; i < len; i += 1) {
+            fn(obj[i], i);
+        }
+    } else {
+        for (var prop in obj) {
+            if (obj.hasOwnProperty(prop)) {
+                fn(obj[prop], prop);
+            }
+        }
+    }
+};
+
 utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
         i = i + 1;
         return arguments[i] || '';
     });
+};
+
+utils.isArray = Array.isArray || function(arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
 };
 
 utils.isPromise = function isPromise(obj) {
@@ -2913,9 +2907,12 @@ function hoistWatchers(component, options) {
         return result.charAt(0) === '-' ? result.substr(1) : result;
     }
 
-    Object.keys(options).forEach(function(key) {
-        /* endsWith method is polyfill by Flipper */
-        if (key.endsWith(suffix) && typeof options[key] === 'function') {
+    function isWatcherMethod(key) {
+        return key.substr(key.length - suffix.length);
+    }
+
+    utils.each(options, function(val, key) {
+        if (isWatcherMethod(key) && typeof val === 'function') {
             var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
             watchers[attrName] = key;
         }
@@ -2928,8 +2925,8 @@ function handleViews(component, options) {
     }
 
     if (typeof options.template === 'object') {
-        Object.keys(options.template).forEach(function(key) {
-            component.addView(options.template[key], key);
+        utils.each(options.template, function(val, key) {
+            component.addView(val, key);
         });
     }
 }
@@ -3495,7 +3492,7 @@ function tryGetNameFromCurrentScript() {
  */
 function parseFactoryArgs(name, dependencies, elementProto) {
     /* Flipper.register( [ dep1, dep2], { ... } ); */
-    if (Array.isArray(name)) {
+    if (utils.isArray(name)) {
         elementProto = dependencies;
         dependencies = name;
         name = tryGetNameFromCurrentScript();
@@ -3507,7 +3504,7 @@ function parseFactoryArgs(name, dependencies, elementProto) {
         name = tryGetNameFromCurrentScript();
 
     /* Flipper.register('xxx', { ... } ); */
-    } else if (typeof name === 'string' && !Array.isArray(dependencies)) {
+    } else if (typeof name === 'string' && !utils.isArray(dependencies)) {
         elementProto = dependencies;
         dependencies = undefined;
     }
@@ -3752,7 +3749,7 @@ Flipper.getComponentHelpers = function getComponentHelpers(name) {
 
 Flipper.components = components;
 
-var packages = {};
+/*var packages = {};
 
 function endsWtih(str, suffix) {
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
@@ -3765,8 +3762,8 @@ function getPackage(str) {
 
 Flipper.config = function(name, options) {
     if (name === 'packages' && typeof options === 'object') {
-        Object.keys(options).forEach(function(key) {
-            packages[key] = options[key];
+        utils.each(options, function(val, key) {
+            packages[key] = val;
         });
     }
 };
@@ -3800,7 +3797,7 @@ Flipper.imports = function() {
 
         document.head.appendChild(frag);
     }
-};
+};*/
 
 Flipper.findShadow = function(target, selector) {
     return target.shadowRoot.querySelectorAll(selector);
@@ -3821,27 +3818,27 @@ window.Flipper = definition();
 }());
 
 /*
-Copyright 2015, xtemplate@4.2.0
+Copyright 2015, xtemplate@4.2.4
 MIT Licensed
-build time: Tue, 07 Apr 2015 05:40:50 GMT
+build time: Thu, 07 May 2015 09:21:25 GMT
 */
 var XTemplate = (function(){ var module = {};
 
 /*
 combined modules:
-xtemplate/4.2.0/index
-xtemplate/4.2.0/runtime
-xtemplate/4.2.0/runtime/util
-xtemplate/4.2.0/runtime/commands
-xtemplate/4.2.0/runtime/scope
-xtemplate/4.2.0/runtime/linked-buffer
-xtemplate/4.2.0/compiler
-xtemplate/4.2.0/compiler/tools
-xtemplate/4.2.0/compiler/parser
-xtemplate/4.2.0/compiler/ast
+xtemplate/4.2.4/index
+xtemplate/4.2.4/runtime
+xtemplate/4.2.4/runtime/util
+xtemplate/4.2.4/runtime/commands
+xtemplate/4.2.4/runtime/scope
+xtemplate/4.2.4/runtime/linked-buffer
+xtemplate/4.2.4/compiler
+xtemplate/4.2.4/compiler/tools
+xtemplate/4.2.4/compiler/parser
+xtemplate/4.2.4/compiler/ast
 */
-var xtemplate420RuntimeUtil, xtemplate420RuntimeScope, xtemplate420RuntimeLinkedBuffer, xtemplate420CompilerTools, xtemplate420CompilerParser, xtemplate420CompilerAst, xtemplate420RuntimeCommands, xtemplate420Runtime, xtemplate420Compiler, xtemplate420Index;
-xtemplate420RuntimeUtil = function (exports) {
+var xtemplate424RuntimeUtil, xtemplate424RuntimeScope, xtemplate424RuntimeLinkedBuffer, xtemplate424CompilerTools, xtemplate424CompilerParser, xtemplate424CompilerAst, xtemplate424RuntimeCommands, xtemplate424Runtime, xtemplate424Compiler, xtemplate424Index;
+xtemplate424RuntimeUtil = function (exports) {
   // http://www.owasp.org/index.php/XSS_(Cross_Site_Scripting)_Prevention_Cheat_Sheet
   // http://wonko.com/post/html-escaping
   var htmlEntities = {
@@ -3960,7 +3957,7 @@ xtemplate420RuntimeUtil = function (exports) {
   };
   return exports;
 }();
-xtemplate420RuntimeScope = function (exports) {
+xtemplate424RuntimeScope = function (exports) {
   function Scope(data, affix, parent) {
     if (data !== undefined) {
       this.data = data;
@@ -4045,6 +4042,9 @@ xtemplate420RuntimeScope = function (exports) {
         return undefined;
       }
       for (i = 1; i < len; i++) {
+        if (v == null) {
+          return v;
+        }
         v = v[parts[i]];
       }
       return v;
@@ -4111,8 +4111,8 @@ xtemplate420RuntimeScope = function (exports) {
   exports = Scope;
   return exports;
 }();
-xtemplate420RuntimeLinkedBuffer = function (exports) {
-  var util = xtemplate420RuntimeUtil;
+xtemplate424RuntimeLinkedBuffer = function (exports) {
+  var util = xtemplate424RuntimeUtil;
   function Buffer(list, next, tpl) {
     this.list = list;
     this.init();
@@ -4236,7 +4236,7 @@ xtemplate420RuntimeLinkedBuffer = function (exports) {
   exports = LinkedBuffer;
   return exports;
 }();
-xtemplate420CompilerTools = function (exports) {
+xtemplate424CompilerTools = function (exports) {
   var doubleReg = /\\*"/g;
   var singleReg = /\\*'/g;
   var arrayPush = [].push;
@@ -4363,7 +4363,7 @@ xtemplate420CompilerTools = function (exports) {
   };
   return exports;
 }();
-xtemplate420CompilerParser = function (exports) {
+xtemplate424CompilerParser = function (exports) {
   var parser = function (undefined) {
     var parser = {};
     var GrammarConst = {
@@ -10172,7 +10172,7 @@ xtemplate420CompilerParser = function (exports) {
   }
   return exports;
 }();
-xtemplate420CompilerAst = function (exports) {
+xtemplate424CompilerAst = function (exports) {
   var ast = {};
   function sameArray(a1, a2) {
     var l1 = a1.length, l2 = a2.length;
@@ -10320,9 +10320,9 @@ xtemplate420CompilerAst = function (exports) {
   exports = ast;
   return exports;
 }();
-xtemplate420RuntimeCommands = function (exports) {
-  var Scope = xtemplate420RuntimeScope;
-  var util = xtemplate420RuntimeUtil;
+xtemplate424RuntimeCommands = function (exports) {
+  var Scope = xtemplate424RuntimeScope;
+  var util = xtemplate424RuntimeUtil;
   var commands = {
     range: function (scope, option) {
       var params = option.params;
@@ -10555,12 +10555,12 @@ xtemplate420RuntimeCommands = function (exports) {
   exports = commands;
   return exports;
 }();
-xtemplate420Runtime = function (exports) {
-  var util = xtemplate420RuntimeUtil;
-  var nativeCommands = xtemplate420RuntimeCommands;
+xtemplate424Runtime = function (exports) {
+  var util = xtemplate424RuntimeUtil;
+  var nativeCommands = xtemplate424RuntimeCommands;
   var commands = {};
-  var Scope = xtemplate420RuntimeScope;
-  var LinkedBuffer = xtemplate420RuntimeLinkedBuffer;
+  var Scope = xtemplate424RuntimeScope;
+  var LinkedBuffer = xtemplate424RuntimeLinkedBuffer;
   function TplWrap(name, runtime, root, scope, buffer, originalName, fn, parent) {
     this.name = name;
     this.originalName = originalName || name;
@@ -10612,7 +10612,12 @@ xtemplate420Runtime = function (exports) {
     if (command1) {
       return command1.call(tpl, scope, option, buffer);
     } else if (command1 !== false) {
-      caller = scope.resolve(parts.slice(0, -1), depth);
+      var callerParts = parts.slice(0, -1);
+      caller = scope.resolve(callerParts, depth);
+      if (caller == null) {
+        buffer.error('Execute function `' + parts.join('.') + '` Error: ' + callerParts.join('.') + ' is undefined or null');
+        return buffer;
+      }
       fn = caller[parts[parts.length - 1]];
       if (fn) {
         try {
@@ -10845,9 +10850,9 @@ xtemplate420Runtime = function (exports) {
   exports = XTemplateRuntime;
   return exports;
 }();
-xtemplate420Compiler = function (exports) {
-  var util = xtemplate420Runtime.util;
-  var compilerTools = xtemplate420CompilerTools;
+xtemplate424Compiler = function (exports) {
+  var util = xtemplate424Runtime.util;
+  var compilerTools = xtemplate424CompilerTools;
   var pushToArray = compilerTools.pushToArray;
   var wrapByDoubleQuote = compilerTools.wrapByDoubleQuote;
   var TMP_DECLARATION = ['var t;'];
@@ -10890,9 +10895,9 @@ xtemplate420Compiler = function (exports) {
   var BUFFER_APPEND = 'buffer.data += {value};';
   var BUFFER_WRITE_ESCAPED = 'buffer = buffer.writeEscaped({value});';
   var RETURN_BUFFER = 'return buffer;';
-  var XTemplateRuntime = xtemplate420Runtime;
-  var parser = xtemplate420CompilerParser;
-  parser.yy = xtemplate420CompilerAst;
+  var XTemplateRuntime = xtemplate424Runtime;
+  var parser = xtemplate424CompilerParser;
+  parser.yy = xtemplate424CompilerAst;
   var nativeCode = [];
   var substitute = util.substitute;
   var each = util.each;
@@ -10905,6 +10910,17 @@ xtemplate420Compiler = function (exports) {
     nativeCode.push(substitute(DECLARE_NATIVE_COMMANDS, { name: name }));
   });
   nativeCode = nativeCode.join('\n');
+  var lastLine = 1;
+  function markLine(pos, source) {
+    if (lastLine === pos.line) {
+      return;
+    }
+    lastLine = pos.line;
+    source.push('pos.line = ' + pos.line + ';');
+  }
+  function resetGlobal() {
+    lastLine = 1;
+  }
   function getFunctionDeclare(functionName) {
     return [
       'function ' + functionName + '(scope, buffer, undefined) {',
@@ -10941,14 +10957,6 @@ xtemplate420Compiler = function (exports) {
       exp: exp,
       source: source
     };
-  }
-  var lastLine = 1;
-  function markLine(pos, source) {
-    if (lastLine === pos.line) {
-      return;
-    }
-    lastLine = pos.line;
-    source.push('pos.line = ' + pos.line + ';');
   }
   function genFunction(self, statements) {
     var functionName = guid(self, 'func');
@@ -11423,6 +11431,7 @@ xtemplate420Compiler = function (exports) {
       });
     },
     compileToJson: function (param) {
+      resetGlobal();
       var name = param.name = param.name || 'xtemplate' + ++anonymousCount;
       var content = param.content;
       var root = compiler.parse(content, name);
@@ -11439,10 +11448,10 @@ xtemplate420Compiler = function (exports) {
   exports = compiler;
   return exports;
 }();
-xtemplate420Index = function (exports) {
-  var XTemplateRuntime = xtemplate420Runtime;
+xtemplate424Index = function (exports) {
+  var XTemplateRuntime = xtemplate424Runtime;
   var util = XTemplateRuntime.util;
-  var Compiler = xtemplate420Compiler;
+  var Compiler = xtemplate424Compiler;
   var compile = Compiler.compile;
   function XTemplate(tpl, config) {
     var tplType = typeof tpl;
@@ -11494,9 +11503,8 @@ xtemplate420Index = function (exports) {
   });
   return exports;
 }();
-return xtemplate420Index;
+return xtemplate424Index;
 })();
-
 (function() {
 'use strict';
 
@@ -11534,16 +11542,6 @@ function renderView(viewContent, data, options) {
     };
 
     commands.requestSpace = requestSpace;
-
-    if (options.commands) {
-        Object.keys(options.commands).forEach(function(key) {
-            if (typeof options.commands[key] === 'function') {
-                commands[key] = options.commands[key];
-            } else {
-                console.warn('template command must be a function');
-            }
-        });
-    }
 
     options.commands = commands;
 

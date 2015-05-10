@@ -193,7 +193,7 @@
  * Code distributed by Google as part of the polymer project is also
  * subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
  */
-// @version 0.6.0
+// @version 0.6.1
 window.WebComponents = window.WebComponents || {};
 
 (function(scope) {
@@ -212,7 +212,7 @@ window.WebComponents = window.WebComponents || {};
         }
       }
     }
-    if (flags.log) {
+    if (flags.log && flags.log.split) {
       var parts = flags.log.split(",");
       flags.log = {};
       parts.forEach(function(f) {
@@ -649,6 +649,9 @@ window.WebComponents = window.WebComponents || {};
     parse.call(this, input, null, base);
   }
   jURL.prototype = {
+    toString: function() {
+      return this.href;
+    },
     get href() {
       if (this._isInvalid) return this._url;
       var authority = "";
@@ -1868,13 +1871,10 @@ CustomElements.addModule(function(scope) {
       root = root.olderShadowRoot;
     }
   }
-  var processingDocuments;
   function forDocumentTree(doc, cb) {
-    processingDocuments = [];
-    _forDocumentTree(doc, cb);
-    processingDocuments = null;
+    _forDocumentTree(doc, cb, []);
   }
-  function _forDocumentTree(doc, cb) {
+  function _forDocumentTree(doc, cb, processingDocuments) {
     doc = wrap(doc);
     if (processingDocuments.indexOf(doc) >= 0) {
       return;
@@ -1883,7 +1883,7 @@ CustomElements.addModule(function(scope) {
     var imports = doc.querySelectorAll("link[rel=" + IMPORT_LINK_TYPE + "]");
     for (var i = 0, l = imports.length, n; i < l && (n = imports[i]); i++) {
       if (n.import) {
-        _forDocumentTree(n.import, cb);
+        _forDocumentTree(n.import, cb, processingDocuments);
       }
     }
     cb(doc);
@@ -2149,8 +2149,9 @@ CustomElements.addModule(function(scope) {
 });
 
 CustomElements.addModule(function(scope) {
+  var isIE11OrOlder = scope.isIE11OrOlder;
   var upgradeDocumentTree = scope.upgradeDocumentTree;
-  var upgrade = scope.upgrade;
+  var upgradeAll = scope.upgradeAll;
   var upgradeWithDefinition = scope.upgradeWithDefinition;
   var implementPrototype = scope.implementPrototype;
   var useNative = scope.useNative;
@@ -2300,14 +2301,8 @@ CustomElements.addModule(function(scope) {
     }
     return element;
   }
-  function cloneNode(deep) {
-    var n = domCloneNode.call(this, deep);
-    upgrade(n);
-    return n;
-  }
   var domCreateElement = document.createElement.bind(document);
   var domCreateElementNS = document.createElementNS.bind(document);
-  var domCloneNode = Node.prototype.cloneNode;
   var isInstance;
   if (!Object.__proto__ && !useNative) {
     isInstance = function(obj, ctor) {
@@ -2325,21 +2320,16 @@ CustomElements.addModule(function(scope) {
       return obj instanceof base;
     };
   }
-  document.registerElement = register;
-  document.createElement = createElement;
-  document.createElementNS = createElementNS;
-  Node.prototype.cloneNode = cloneNode;
-  scope.registry = registry;
-  scope.instanceof = isInstance;
-  scope.reservedTagList = reservedTagList;
-  scope.getRegisteredDefinition = getRegisteredDefinition;
-  document.register = document.registerElement;
-});
-
-(function(scope) {
-  var useNative = scope.useNative;
-  var initializeModules = scope.initializeModules;
-  var isIE11OrOlder = /Trident/.test(navigator.userAgent);
+  function wrapDomMethodToForceUpgrade(obj, methodName) {
+    var orig = obj[methodName];
+    obj[methodName] = function() {
+      var n = orig.apply(this, arguments);
+      upgradeAll(n);
+      return n;
+    };
+  }
+  wrapDomMethodToForceUpgrade(Node.prototype, "cloneNode");
+  wrapDomMethodToForceUpgrade(document, "importNode");
   if (isIE11OrOlder) {
     (function() {
       var importNode = document.importNode;
@@ -2355,6 +2345,20 @@ CustomElements.addModule(function(scope) {
       };
     })();
   }
+  document.registerElement = register;
+  document.createElement = createElement;
+  document.createElementNS = createElementNS;
+  scope.registry = registry;
+  scope.instanceof = isInstance;
+  scope.reservedTagList = reservedTagList;
+  scope.getRegisteredDefinition = getRegisteredDefinition;
+  document.register = document.registerElement;
+});
+
+(function(scope) {
+  var useNative = scope.useNative;
+  var initializeModules = scope.initializeModules;
+  var isIE11OrOlder = /Trident/.test(navigator.userAgent);
   if (useNative) {
     var nop = function() {};
     scope.watchShadow = nop;
@@ -2415,6 +2419,7 @@ CustomElements.addModule(function(scope) {
     var loadEvent = window.HTMLImports && !HTMLImports.ready ? "HTMLImportsLoaded" : "DOMContentLoaded";
     window.addEventListener(loadEvent, bootstrap);
   }
+  scope.isIE11OrOlder = isIE11OrOlder;
 })(window.CustomElements);
 
 if (typeof HTMLTemplateElement === "undefined") {

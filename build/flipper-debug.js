@@ -29,35 +29,6 @@ if (!document._currentScript) {
     Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
 }
 
-if (!String.prototype.startsWith) {
-    Object.defineProperty(String.prototype, 'startsWith', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: function(searchString, position) {
-            position = position || 0;
-            return this.lastIndexOf(searchString, position) === position;
-        }
-    });
-}
-
-if (!String.prototype.endsWith) {
-    Object.defineProperty(String.prototype, 'endsWith', {
-        enumerable: false,
-        configurable: false,
-        writable: false,
-        value: function(searchString, position) {
-            var subjectString = this.toString();
-            if (position === undefined || position > subjectString.length) {
-                position = subjectString.length;
-            }
-            position -= searchString.length;
-            var lastIndex = subjectString.indexOf(searchString, position);
-            return lastIndex !== -1 && lastIndex === position;
-        }
-    });
-}
-
 var configs = {
     templateEngine: 'default',
     injectionMode:  'light-dom',
@@ -83,12 +54,30 @@ var utils = {};
 
 utils.noop = function() {};
 
+utils.each = function(obj, fn) {
+    if (utils.isArray(obj)) {
+        for (var i = 0, len = obj.length; i < len; i += 1) {
+            fn(obj[i], i);
+        }
+    } else {
+        for (var prop in obj) {
+            if (obj.hasOwnProperty(prop)) {
+                fn(obj[prop], prop);
+            }
+        }
+    }
+};
+
 utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
         i = i + 1;
         return arguments[i] || '';
     });
+};
+
+utils.isArray = Array.isArray || function(arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
 };
 
 utils.isPromise = function isPromise(obj) {
@@ -416,9 +405,12 @@ function hoistWatchers(component, options) {
         return result.charAt(0) === '-' ? result.substr(1) : result;
     }
 
-    Object.keys(options).forEach(function(key) {
-        /* endsWith method is polyfill by Flipper */
-        if (key.endsWith(suffix) && typeof options[key] === 'function') {
+    function isWatcherMethod(key) {
+        return key.substr(key.length - suffix.length);
+    }
+
+    utils.each(options, function(val, key) {
+        if (isWatcherMethod(key) && typeof val === 'function') {
             var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
             watchers[attrName] = key;
         }
@@ -431,8 +423,8 @@ function handleViews(component, options) {
     }
 
     if (typeof options.template === 'object') {
-        Object.keys(options.template).forEach(function(key) {
-            component.addView(options.template[key], key);
+        utils.each(options.template, function(val, key) {
+            component.addView(val, key);
         });
     }
 }
@@ -998,7 +990,7 @@ function tryGetNameFromCurrentScript() {
  */
 function parseFactoryArgs(name, dependencies, elementProto) {
     /* Flipper.register( [ dep1, dep2], { ... } ); */
-    if (Array.isArray(name)) {
+    if (utils.isArray(name)) {
         elementProto = dependencies;
         dependencies = name;
         name = tryGetNameFromCurrentScript();
@@ -1010,7 +1002,7 @@ function parseFactoryArgs(name, dependencies, elementProto) {
         name = tryGetNameFromCurrentScript();
 
     /* Flipper.register('xxx', { ... } ); */
-    } else if (typeof name === 'string' && !Array.isArray(dependencies)) {
+    } else if (typeof name === 'string' && !utils.isArray(dependencies)) {
         elementProto = dependencies;
         dependencies = undefined;
     }
@@ -1255,7 +1247,7 @@ Flipper.getComponentHelpers = function getComponentHelpers(name) {
 
 Flipper.components = components;
 
-var packages = {};
+/*var packages = {};
 
 function endsWtih(str, suffix) {
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
@@ -1268,8 +1260,8 @@ function getPackage(str) {
 
 Flipper.config = function(name, options) {
     if (name === 'packages' && typeof options === 'object') {
-        Object.keys(options).forEach(function(key) {
-            packages[key] = options[key];
+        utils.each(options, function(val, key) {
+            packages[key] = val;
         });
     }
 };
@@ -1303,7 +1295,7 @@ Flipper.imports = function() {
 
         document.head.appendChild(frag);
     }
-};
+};*/
 
 Flipper.findShadow = function(target, selector) {
     return target.shadowRoot.querySelectorAll(selector);

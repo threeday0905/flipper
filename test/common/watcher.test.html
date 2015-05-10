@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+
+    <script src="http://g.alicdn.com/hi/modulex/5.0.0/seed-debug.js"></script>
+    <script src="../../build/flipper-bundle-debug.js"></script>
+
+    <link rel="import" href="./realcase/watcher.html">
+</head>
+
+<body>
+    <t-watcher id="demo" title="N/A"></t-watcher>
+
+    <script>
+    setInterval(function() {
+        document.getElementById('demo').setAttribute('title', new Date());
+    }, 500);
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,29 @@
+<web-component name="t-watcher" template-engine="xtpl">
+    <style>
+        t-watcher {
+            display: block;
+        }
+    </style>
+
+    <template>
+        <h1>t-watcher: {{myName()}}</h1>
+        <h2>current time is <strong>{{attr("title")}}</strong></h2>
+    </template>
+
+    <script>
+        Flipper.register({
+            commands: {
+                myName: function() {
+                    return 'YAYAY';
+                }
+            },
+            titleChanged: function(oldValue, newValue) {
+                console.log({
+                    newValue: newValue,
+                    oldValue: oldValue
+                });
+                this.refresh();
+            }
+        });
+    </script>
+</web-component>
