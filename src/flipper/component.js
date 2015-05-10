@@ -32,9 +32,12 @@ function hoistWatchers(component, options) {
         return result.charAt(0) === '-' ? result.substr(1) : result;
     }
 
-    Object.keys(options).forEach(function(key) {
-        /* endsWith method is polyfill by Flipper */
-        if (key.endsWith(suffix) && typeof options[key] === 'function') {
+    function isWatcherMethod(key) {
+        return key.substr(key.length - suffix.length);
+    }
+
+    utils.each(options, function(val, key) {
+        if (isWatcherMethod(key) && typeof val === 'function') {
             var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
             watchers[attrName] = key;
         }
@@ -47,8 +50,8 @@ function handleViews(component, options) {
     }
 
     if (typeof options.template === 'object') {
-        Object.keys(options.template).forEach(function(key) {
-            component.addView(options.template[key], key);
+        utils.each(options.template, function(val, key) {
+            component.addView(val, key);
         });
     }
 }

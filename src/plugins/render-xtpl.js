@@ -33,16 +33,6 @@ function renderView(viewContent, data, options) {
 
     commands.requestSpace = requestSpace;
 
-    if (options.commands) {
-        Object.keys(options.commands).forEach(function(key) {
-            if (typeof options.commands[key] === 'function') {
-                commands[key] = options.commands[key];
-            } else {
-                console.warn('template command must be a function');
-            }
-        });
-    }
-
     options.commands = commands;
 
     return compiledView.render(data, options);

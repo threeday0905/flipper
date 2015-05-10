@@ -53,7 +53,7 @@ function tryGetNameFromCurrentScript() {
  */
 function parseFactoryArgs(name, dependencies, elementProto) {
     /* Flipper.register( [ dep1, dep2], { ... } ); */
-    if (Array.isArray(name)) {
+    if (utils.isArray(name)) {
         elementProto = dependencies;
         dependencies = name;
         name = tryGetNameFromCurrentScript();
@@ -65,7 +65,7 @@ function parseFactoryArgs(name, dependencies, elementProto) {
         name = tryGetNameFromCurrentScript();
 
     /* Flipper.register('xxx', { ... } ); */
-    } else if (typeof name === 'string' && !Array.isArray(dependencies)) {
+    } else if (typeof name === 'string' && !utils.isArray(dependencies)) {
         elementProto = dependencies;
         dependencies = undefined;
     }

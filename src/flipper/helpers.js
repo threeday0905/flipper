@@ -1,4 +1,4 @@
-var packages = {};
+/*var packages = {};
 
 function endsWtih(str, suffix) {
     return str.indexOf(suffix, str.length - suffix.length) !== -1;
@@ -11,8 +11,8 @@ function getPackage(str) {
 
 Flipper.config = function(name, options) {
     if (name === 'packages' && typeof options === 'object') {
-        Object.keys(options).forEach(function(key) {
-            packages[key] = options[key];
+        utils.each(options, function(val, key) {
+            packages[key] = val;
         });
     }
 };
@@ -46,7 +46,7 @@ Flipper.imports = function() {
 
         document.head.appendChild(frag);
     }
-};
+};*/
 
 Flipper.findShadow = function(target, selector) {
     return target.shadowRoot.querySelectorAll(selector);
