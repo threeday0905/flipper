@@ -6,6 +6,7 @@
 - If the component is ready, element.status will be "ready".
 - If the component is render failed, element.status will be "fail".
 - Add the __flipper__ flag to mark the component is Flipper component.
+- build flipper-xtpl.js to included xtemplate.
 
 ## v0.4.1
 - add destroy() callback
