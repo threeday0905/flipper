@@ -1,0 +1,17 @@
+ie8-wrapper {
+    display: block;
+    background-color: red;
+    width: 400px;
+    height: 400px;
+    text-align: center;
+    border: 5px solid black;
+}
+
+ie8-wrapper h1 {
+    padding: 20px;
+    margin: 0;
+}
+
+ie8-wrapper ie8-sample {
+    margin: 0 auto;
+}

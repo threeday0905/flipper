@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flipper UI - demo</title>
+    <meta charset="utf-8" />
+
+    <meta content="webkit" name="renderer">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+    <script src="../../../build/flipper-xtpl-debug.js"></script>
+    <script src="../../../build/vendor/jquery/jquery.js"></script>
+
+    <script src="./component/ie8-sample.js"></script>
+    <script src="./component/ie8-wrapper.js"></script>
+    <link rel="stylesheet" type="text/css" href="./component/ie8-sample.css">
+    <link rel="stylesheet" type="text/css" href="./component/ie8-wrapper.css">
+</head>
+
+<body>
+    <ie8-wrapper id="a"></ie8-wrapper>
+    <br>
+    <ie8-sample id="b" sub="sub"></ie8-sample>
+
+    <script>
+        Flipper.parse(document.body);
+    </script>
+</body>
+
+</html>

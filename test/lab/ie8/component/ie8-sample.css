@@ -1,0 +1,24 @@
+ie8-sample {
+    width: 200px;
+    height: 200px;
+    padding: 20px;
+    display: block;
+    background-color: orange;
+    border: 5px solid pink;
+    font-size: 14px;
+}
+
+ie8-sample h1 {
+    background-color: blue;
+    font-size: 14px;
+}
+
+ie8-sample h2 {
+    background-color: green;
+    font-size: 14px;
+}
+
+ie8-sample h3 {
+    background-color: purple;
+    font-size: 14px;
+}
