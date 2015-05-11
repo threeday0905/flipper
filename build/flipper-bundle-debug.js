@@ -2570,6 +2570,16 @@ utils.each = function(obj, fn) {
     }
 };
 
+var REGEX_TRIM = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+
+utils.trim = function trim(str) {
+    if (typeof str === 'string') {
+        return str.trim ? str.trim() : str.replace(REGEX_TRIM, '');
+    } else {
+        return str;
+    }
+};
+
 utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
@@ -2586,13 +2596,26 @@ utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-
+var debugEnable = false;
+utils.debug = function debug() {
+    if (!debugEnable) {
+        return;
+    }
+    var msg = utils.format.apply(utils, arguments);
+    if (typeof console.log === 'function') {
+        console.log(msg);
+    }
+};
 
 utils.log = function log() {
     var msg = utils.format.apply(utils, arguments);
     if (typeof console.log === 'function') {
         console.log(msg);
     }
+};
+
+utils.error = function(err) {
+    console.error(err.stack || err);
 };
 
 function doesGetOwnPropertyDescriptorWork(object) {
@@ -2696,7 +2719,30 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
     }
 };
 
-Flipper.utils = utils;
+utils.isCustomTag = function(tagName) {
+    return tagName && tagName.lastIndexOf('-') >= 0;
+};
+
+utils.event = {
+    on: function(node, method, callback) {
+        node.addEventListener(method, callback, false);
+    },
+    trigger: function(node, method, params) {
+        var event = new CustomEvent(method);
+        node.dispatchEvent(event);
+    },
+    create: function(method) {
+        return new CustomEvent(method);
+    }
+};
+
+utils.query = function(node, selector) {
+    return node.querySelector(selector);
+};
+
+utils.query.all = function(node, selector) {
+    return node.querySelectorAll(selector);
+};
 
 var templateEngines = {};
 
@@ -2945,7 +2991,6 @@ ComponentDefinition.prototype = {
     }
 };
 
-
 var COMPONENT_STATUS = {
     ERROR: 'ERROR', // -1,
     INITIALIZING: 'INITIALIZING', //0,
@@ -3008,10 +3053,6 @@ function handleStyle(component, options) {
     if (options.style) {
         component.style = options.style;
     }
-}
-
-function logError(err) {
-    console.error(err.stack || err);
 }
 
 /* Element Prototype */
@@ -3144,13 +3185,15 @@ function createElementProto(component) {
                     }
                 }
 
+                var renderComplete = component.renderComplete.bind(component, element);
+
                 return Promise.resolve()
                         .then(component.renderBegin.bind(component, element))
                         .then(handleRefresh)
                         .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
                         ['catch'](component.renderFail.bind(component, element))
-                        .then(component.renderComplete.bind(component, element));
+                        .then(renderComplete, renderComplete);
             }
         },
         createdCallback: {
@@ -3249,6 +3292,13 @@ Component.prototype = {
 
         this.fire('initialized');
     },
+    parse: function(dom) {
+        if (!dom.__flipper__) {
+            utils.mixin(dom, this.elementProto);
+            dom.createdCallback();
+            dom.attachedCallback();
+        }
+    },
     markFailed: function(error) {
         this.status = COMPONENT_STATUS.ERROR;
 
@@ -3328,6 +3378,9 @@ Component.prototype = {
 
     /* created / attached cycle methods */
     createdCallback: function(element) {
+        utils.debug(element, 'is created');
+        var renderComplete = this.renderComplete.bind(this, element);
+
         /*jshint -W024 */
         Promise.resolve()
             .then(this.renderBegin.bind(this, element))
@@ -3336,11 +3389,14 @@ Component.prototype = {
             .then(this.renderSuccess.bind(this, element))
             ['catch'](this.renderFail.bind(this, element))
             .then(this.addStyle.bind(this, element))
-            .then(this.renderComplete.bind(this, element));
+            .then(renderComplete, renderComplete);
 
     },
     renderBegin: function(element) {
+        utils.debug(element, 'render begin');
         element.setAttribute('unresolved', '');
+        element.__flipper__ = true;
+        utils.debug(element, 'has flipper flag', element.__flipper__);
     },
     initElement: function(element) {
         return tryCallLifeCycleEvent(element, 'initialize');
@@ -3426,8 +3482,8 @@ Component.prototype = {
         if (element.shadowRoot && element.shadowRoot.innerHTML) {
             element.shadowRoot.appendChild(style);
         } else {
-            var existsStyle =
-                document.querySelector('style[referance-to="' + this.name + '"]');
+            var existsStyle = utils.query(element,
+                'style[referance-to="' + this.name + '"]');
             if (!existsStyle) {
                 (document.head || document.body).appendChild(style);
             }
@@ -3436,26 +3492,28 @@ Component.prototype = {
     },
     /* refersh flow */
     renderFail: function(element, err) {
-        logError(err);
+        utils.debug(element, 'render fail');
+        utils.error(err);
+        element.status = 'fail';
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
         return Promise.resolve(result).then(function() {
-            var readyEvent = new CustomEvent('fail');
-            element.dispatchEvent(readyEvent);
+            utils.event.trigger(element, 'fail');
         });
     },
     renderSuccess: function(element) {
+        utils.debug(element, 'render success');
+        element.status = 'ready';
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            element.removeAttribute('unresolved');
-            var readyEvent = new CustomEvent('ready');
-            element.dispatchEvent(readyEvent);
+            utils.event.trigger(element, 'ready');
         });
     },
-
     renderComplete: function(element) {
-        var completeEvent = new CustomEvent('initialized');
-        element.dispatchEvent(completeEvent);
+        utils.debug(element, 'render complete');
+        element.removeAttribute('unresolved');
+        element.initialized = true;
+        utils.event.trigger(element, 'initialized');
     },
 
     /* detach cycle methods */
@@ -3471,8 +3529,7 @@ Component.prototype = {
             element.model = undefined;
         }
 
-        var destroyEvent = new CustomEvent('destroy');
-        element.dispatchEvent(destroyEvent);
+        utils.event.trigger(element, 'destroy');
     },
 
     /* attribute changed callback */
@@ -3511,10 +3568,36 @@ Flipper.Component = Component;
 
 var components = {};
 
+var waitings = {};
+
+function waitingComponent(name, node, callback) {
+    var component = components[name];
+
+    if (component && component.isReady()) {
+        callback(component, node);
+    } else {
+        if (!waitings[name]) {
+            waitings[name] = [];
+        }
+
+        waitings[name].push({
+            node: node,
+            callback: callback
+        });
+    }
+}
+
 function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
+        component.on('initialized', function() {
+            if (waitings[name]) {
+                utils.each(waitings[name], function(obj) {
+                    obj.callback(component, obj.node);
+                });
+            }
+        });
     }
 
     if (component.isReady()) {
@@ -3815,6 +3898,10 @@ Flipper.getComponent = function getComponent(name) {
     return components[name];
 };
 
+Flipper.hasCompoent = function hasCompoent(name) {
+    return !!Flipper.getComponent(name);
+};
+
 Flipper.getComponentHelpers = function getComponentHelpers(name) {
     var component = components[name];
 
@@ -3823,58 +3910,60 @@ Flipper.getComponentHelpers = function getComponentHelpers(name) {
 
 Flipper.components = components;
 
-/*var packages = {};
-
-function endsWtih(str, suffix) {
-    return str.indexOf(suffix, str.length - suffix.length) !== -1;
-}
-
-function getPackage(str) {
-    var match = /(\w+)\//.exec(str);
-    return match ? match[1] : '';
-}
-
-Flipper.config = function(name, options) {
-    if (name === 'packages' && typeof options === 'object') {
-        utils.each(options, function(val, key) {
-            packages[key] = val;
-        });
-    }
+Flipper.findShadow = function(target, selector) {
+    return utils.query.all(target.shadowRoot, selector);
 };
 
-Flipper.imports = function() {
-    var baseURI = document.baseURI,
-        components = Array.prototype.slice.call(arguments, 0);
-
-    if (components) {
-        var frag = document.createDocumentFragment();
-
-        components.map(function(name) {
-            var pkg = getPackage(name);
-
-            if (pkg && packages[pkg] && packages[pkg].base) {
-                name = packages[pkg].base + name.substr(pkg.length);
-            }
-
-            if ( endsWtih(name, '/') ) {
-                name += 'index.html';
-            }
-
-
-            return new URL(name, baseURI).toString();
-        }).forEach(function(url) {
-            var link = document.createElement('link');
-            link.rel = 'import';
-            link.href = url;
-            frag.appendChild(link);
-        });
-
-        document.head.appendChild(frag);
+Flipper.whenReady = function(methods, doms, callback) {
+    if (arguments.length === 2) {
+        callback = doms;
+        doms = methods;
+        methods = 'initialized';
     }
-};*/
 
-Flipper.findShadow = function(target, selector) {
-    return target.shadowRoot.querySelectorAll(selector);
+    if (!utils.isArray(doms)) {
+        doms = [ doms ];
+    }
+
+    if (typeof callback !== 'function') {
+        callback = utils.noop;
+    }
+
+    methods = methods.split(',');
+
+    function bindReadyEvent(dom, method) {
+        utils.debug(dom, 'has flag on bind', dom.__flipper__);
+        if (dom) {
+            if (dom.initialized) {
+                if (method === 'ready' && dom.status !== 'ready') {
+                    return;
+                }
+
+                if (method === 'fail' && dom.status !== 'fail') {
+                    return;
+                }
+
+                var ev = utils.event.create(method);
+                callback.call(dom, ev);
+            } else {
+                utils.event.on(dom, method, callback);
+            }
+        }
+    }
+
+    utils.each(methods, function(method) {
+        method = utils.trim(method);
+        utils.each(doms, function(dom) {
+            if (typeof dom === 'string') {
+                utils.each(utils.query.all(document, dom), function(one) {
+                    bindReadyEvent(one, method);
+                });
+            } else {
+                bindReadyEvent(dom, method);
+            }
+
+        });
+    });
 };
 
 function definition() {
