@@ -1,22 +1,50 @@
-Flipper.init = function init(node) {
-    if (!node || !node.tagName) {
-        throw new Error('must provide a node obj for Flipper init');
+function isCustomNode(node) {
+    return node && node.tagName &&
+        utils.isCustomTag( node.tagName );
+}
+
+function getNodeObj(node) {
+    if (typeof node === 'string') {
+        return utils.query(node);
+    } else {
+        return node;
     }
+}
 
-    var tagName = node.tagName.toLowerCase();
-
-    if (!utils.isCustomTag(tagName)) {
+Flipper.init = function init(node) {
+    if (Flipper.useNative) {
         return false;
     }
 
-    waitingComponent(tagName, node, function(component, node) {
-        component.parse(node);
-        utils.event.on(node, 'ready', function() {
-            Flipper.parse(node);
-        });
+    node = getNodeObj(node);
+
+    if (!isCustomNode(node)) {
+        return false;
+    }
+
+    if (node.initialized) {
+        return false;
+    }
+
+    waitingComponent(node.tagName, node, function(component, node) {
+        component.transform(node);
     });
+
+    return true;
 };
 
 Flipper.parse = function(node) {
+    if (Flipper.useNative) {
+        return false;
+    }
 
+    node = getNodeObj(node);
+
+    utils.eachChildNodes(node, undefined, function(ele) {
+        if (isCustomNode(ele)) {
+            Flipper.init(ele);
+        } else if (ele.childNodes && ele.childNodes.length) {
+            Flipper.parse(ele);
+        }
+    });
 };

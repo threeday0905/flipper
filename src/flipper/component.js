@@ -111,7 +111,8 @@ function tryCallLifeCycleEvent(element, methodName, args) {
 }
 
 function createElementProto(component) {
-    var elementProto = utils.createObject(HTMLElement.prototype);
+    var element = window.HTMLElement || window.Element, /* for fuck IE */
+        elementProto = utils.createObject(element.prototype);
 
     elementProto._lifeCycle = {};
 
@@ -247,20 +248,21 @@ function Component(name) {
 Component.prototype = {
     /* event */
     on: function(name, fn) {
-        if (!this._events) {
-            this._events = {};
+        if (!this.__events__) {
+            this.__events__ = {};
         }
 
-        if (!this._events[name]) {
-            this._events[name] = [];
+        if (!this.__events__[name]) {
+            this.__events__[name] = [];
         }
 
-        this._events[name].push(fn);
+        this.__events__[name].push(fn);
     },
     fire: function(name) {
-        if (this._events && this._events[name]) {
-            utils.each(this._events[name], function(fn) {
-                fn();
+        var self = this;
+        if (this.__events__ && this.__events__[name]) {
+            utils.each(this.__events__[name], function(fn) {
+                fn(self);
             });
         }
     },
@@ -288,7 +290,7 @@ Component.prototype = {
         throwIfAlreadyRegistered(this);
         this.prepare(this.definition.proto);
 
-        if (document.registerElement) {
+        if (Flipper.useNative) {
             document.registerElement(this.name, {
                 prototype: this.elementProto
             });
@@ -299,8 +301,8 @@ Component.prototype = {
 
         this.fire('initialized');
     },
-    parse: function(dom) {
-        if (!dom.__flipper__) {
+    transform: function(dom) {
+        if (!dom.__flipper__) { /* transform it if the node is empty */
             utils.mixin(dom, this.elementProto);
             dom.createdCallback();
             dom.attachedCallback();
@@ -347,21 +349,21 @@ Component.prototype = {
             }
         };
 
-        if (!result) {
+        if (!result && this.definitionEle) {
             utils.eachChildNodes(this.definitionEle, function(ele) {
                 return ele.tagName && ele.tagName.toLowerCase() === 'template';
             }, function(ele) {
                 return setupTplIfIdMatched(ele);
             });
-        }
 
-        if (!result) {
-            utils.eachChildNodes(this.definitionEle, function(ele) {
-                return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
-                        ele.getAttribute('type') === 'template';
-            }, function(ele) {
-                return setupTplIfIdMatched(ele);
-            });
+            if (!result) {
+                utils.eachChildNodes(this.definitionEle, function(ele) {
+                    return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
+                            ele.getAttribute('type') === 'template';
+                }, function(ele) {
+                    return setupTplIfIdMatched(ele);
+                });
+            }
         }
 
         if (!result && viewName === 'index') {
@@ -521,6 +523,10 @@ Component.prototype = {
         element.removeAttribute('unresolved');
         element.initialized = true;
         utils.event.trigger(element, 'initialized');
+
+        if (!Flipper.useNative) {
+            Flipper.parse(element);
+        }
     },
 
     /* detach cycle methods */

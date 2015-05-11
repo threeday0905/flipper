@@ -3,6 +3,7 @@ var components = {};
 var waitings = {};
 
 function waitingComponent(name, node, callback) {
+    name = name.toLowerCase();
     var component = components[name];
 
     if (component && component.isReady()) {
@@ -23,11 +24,12 @@ function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function() {
+        component.on('initialized', function(component) {
             if (waitings[name]) {
                 utils.each(waitings[name], function(obj) {
                     obj.callback(component, obj.node);
                 });
+                waitings[name] = null;
             }
         });
     }
@@ -310,7 +312,7 @@ function registerFromDeclarationTag(ele) {
  */
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
-if (document.registerElement) {
+if (Flipper.useNative) {
     document.registerElement(Flipper.configs.declarationTag /* web-component */, {
         prototype: utils.createObject(HTMLElement.prototype, {
             createdCallback: {

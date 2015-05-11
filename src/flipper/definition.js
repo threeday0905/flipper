@@ -60,7 +60,7 @@ function goThroughIfReady(currentCount, goThrough) {
 
 ComponentDefinition.prototype = {
     ready: function(onFulfillment, onRejection) {
-        return this.promiseAll.then(onFulfillment, onRejection);
+        return this.promiseAll.then(onFulfillment)['catch'](onRejection);
     },
     mixinProto: function(newProto) {
         var self = this;

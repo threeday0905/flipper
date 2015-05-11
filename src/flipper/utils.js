@@ -180,9 +180,49 @@ function request$(args) {
     return window.jQuery(args);
 }
 
+var supportCustomEvent = !!window.CustomEvent;
+
+if (supportCustomEvent) {
+    try {
+        new CustomEvent('xyz');
+    } catch (ex) {
+        supportCustomEvent = false;
+    }
+}
+
+var isIE = (function() {
+    function detectIE() {
+        var ua = window.navigator.userAgent;
+
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            // IE 10 or older => return version number
+            return parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        }
+
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            // IE 11 => return version number
+            var rv = ua.indexOf('rv:');
+            return parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+        }
+
+        var edge = ua.indexOf('Edge/');
+        if (edge > 0) {
+           // IE 12 => return version number
+           return parseInt(ua.substring(edge + 5, ua.indexOf('.', edge)), 10);
+        }
+
+        // other browser
+        return false;
+    }
+
+    return detectIE();
+}());
+
 utils.event = {
     on: function(node, method, callback) {
-        if (node.addEventListener) {
+        if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
             request$(node).on('method', callback);
@@ -190,7 +230,7 @@ utils.event = {
 
     },
     trigger: function(node, method) {
-        if (node.dispatchEvent) {
+        if (supportCustomEvent && !isIE) {
             node.dispatchEvent( utils.event.create(method) );
         } else {
             request$(node).trigger('method');
@@ -199,17 +239,24 @@ utils.event = {
     },
     create: function(method) {
         var event;
-        if (window.CustomEvent) {
+        if (supportCustomEvent) {
             event = new CustomEvent(method);
-        } else {
+        } else if (document.createEvent) {
             event = document.createEvent('HTMLEvents');
             event.initEvent(method, true, true);
+        } else {
+            event = {};
         }
         return event;
     }
 };
 
 utils.query = function(node, selector) {
+    if (arguments.length === 1) {
+        selector = node;
+        node = document;
+    }
+
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
@@ -218,6 +265,11 @@ utils.query = function(node, selector) {
 };
 
 utils.query.all = function(node, selector) {
+    if (arguments.length === 1) {
+        selector = node;
+        node = document;
+    }
+
     if (node.querySelectorAll) {
         return node.querySelectorAll(selector);
     } else {

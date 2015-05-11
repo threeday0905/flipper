@@ -1,5 +1,6 @@
 {
     "flipper.js": [
+        "../build/vendor/promise-polyfill/Promise.js",
         "./intro.snippet",
         "./flipper/polyfill.js",
         "./flipper/root.js",
@@ -10,6 +11,7 @@
         "./flipper/definition.js",
         "./flipper/component.js",
         "./flipper/register.js",
+        "./flipper/manually-init.js",
         "./flipper/helpers.js",
         "./flipper/exports.js",
         "./outro.snippet"
@@ -21,11 +23,15 @@
     ],
     "polyfill.js": [
         "./polyfill/license.txt",
-        "../build/vendor/promise-polyfill/Promise.js",
         "../build/vendor/webcomponentsjs/webcomponents-lite.js",
         "./intro.snippet",
         "./polyfill/stub.js",
         "./outro.snippet"
+    ],
+    "flipper-xtpl.js": [
+        "../build/flipper-debug.js",
+        "../build/vendor/xtemplate/index-standalone-debug.js",
+        "../build/plugins/xtpl-debug.js"
     ],
     "flipper-bundle.js": [
         "../build/polyfill-debug.js",

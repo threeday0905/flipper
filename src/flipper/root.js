@@ -6,7 +6,8 @@ var configs = {
 
 var Flipper = {
     version: '@@VERSION@@',
-    configs: configs
+    configs: configs,
+    useNative: !!document.registerElement
 };
 
 Flipper.config = function(key, value) {
