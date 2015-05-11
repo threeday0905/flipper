@@ -19,21 +19,22 @@
 
     <script>
         require(['lib/jquery/2.1.3/'], function($) {
-            $('t-render-error-async').on('fail', function() {
-                console.log('render fail called');
-            });
+            Flipper.whenReady('fail', 't-render-error-async', function() {
+                console.log('async render fail called');
+            })
 
-            $('t-render-error-async').on('initialized', function() {
-                console.log('render initialized called');
-            });
+            Flipper.whenReady('initialized', 't-render-error-async', function() {
+                console.log('async render initialized called');
+            })
 
-            $('t-render-error').on('fail', function() {
-                console.log('render fail called');
-            });
+            Flipper.whenReady('fail', 't-render-error', function() {
+                console.log('sync render fail called');
+            })
 
-            $('t-render-error').on('initialized', function() {
-                console.log('render initialized called');
-            });
+            Flipper.whenReady('initialized', 't-render-error', function() {
+                console.log('sync render initialized called');
+            })
+
         });
     </script>
 </body>
