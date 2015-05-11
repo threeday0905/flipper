@@ -62,10 +62,6 @@ function handleStyle(component, options) {
     }
 }
 
-function logError(err) {
-    console.error(err.stack || err);
-}
-
 /* Element Prototype */
 var LIFE_EVENTS = [
     'initialize',
@@ -196,13 +192,15 @@ function createElementProto(component) {
                     }
                 }
 
+                var renderComplete = component.renderComplete.bind(component, element);
+
                 return Promise.resolve()
                         .then(component.renderBegin.bind(component, element))
                         .then(handleRefresh)
                         .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
                         ['catch'](component.renderFail.bind(component, element))
-                        .then(component.renderComplete.bind(component, element));
+                        .then(renderComplete, renderComplete);
             }
         },
         createdCallback: {
@@ -301,6 +299,13 @@ Component.prototype = {
 
         this.fire('initialized');
     },
+    parse: function(dom) {
+        if (!dom.__flipper__) {
+            utils.mixin(dom, this.elementProto);
+            dom.createdCallback();
+            dom.attachedCallback();
+        }
+    },
     markFailed: function(error) {
         this.status = COMPONENT_STATUS.ERROR;
 
@@ -380,6 +385,9 @@ Component.prototype = {
 
     /* created / attached cycle methods */
     createdCallback: function(element) {
+        utils.debug(element, 'is created');
+        var renderComplete = this.renderComplete.bind(this, element);
+
         /*jshint -W024 */
         Promise.resolve()
             .then(this.renderBegin.bind(this, element))
@@ -388,11 +396,14 @@ Component.prototype = {
             .then(this.renderSuccess.bind(this, element))
             ['catch'](this.renderFail.bind(this, element))
             .then(this.addStyle.bind(this, element))
-            .then(this.renderComplete.bind(this, element));
+            .then(renderComplete, renderComplete);
 
     },
     renderBegin: function(element) {
+        utils.debug(element, 'render begin');
         element.setAttribute('unresolved', '');
+        element.__flipper__ = true;
+        utils.debug(element, 'has flipper flag', element.__flipper__);
     },
     initElement: function(element) {
         return tryCallLifeCycleEvent(element, 'initialize');
@@ -478,8 +489,8 @@ Component.prototype = {
         if (element.shadowRoot && element.shadowRoot.innerHTML) {
             element.shadowRoot.appendChild(style);
         } else {
-            var existsStyle =
-                document.querySelector('style[referance-to="' + this.name + '"]');
+            var existsStyle = utils.query(element,
+                'style[referance-to="' + this.name + '"]');
             if (!existsStyle) {
                 (document.head || document.body).appendChild(style);
             }
@@ -488,26 +499,28 @@ Component.prototype = {
     },
     /* refersh flow */
     renderFail: function(element, err) {
-        logError(err);
+        utils.debug(element, 'render fail');
+        utils.error(err);
+        element.status = 'fail';
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
         return Promise.resolve(result).then(function() {
-            var readyEvent = new CustomEvent('fail');
-            element.dispatchEvent(readyEvent);
+            utils.event.trigger(element, 'fail');
         });
     },
     renderSuccess: function(element) {
+        utils.debug(element, 'render success');
+        element.status = 'ready';
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            element.removeAttribute('unresolved');
-            var readyEvent = new CustomEvent('ready');
-            element.dispatchEvent(readyEvent);
+            utils.event.trigger(element, 'ready');
         });
     },
-
     renderComplete: function(element) {
-        var completeEvent = new CustomEvent('initialized');
-        element.dispatchEvent(completeEvent);
+        utils.debug(element, 'render complete');
+        element.removeAttribute('unresolved');
+        element.initialized = true;
+        utils.event.trigger(element, 'initialized');
     },
 
     /* detach cycle methods */
@@ -523,8 +536,7 @@ Component.prototype = {
             element.model = undefined;
         }
 
-        var destroyEvent = new CustomEvent('destroy');
-        element.dispatchEvent(destroyEvent);
+        utils.event.trigger(element, 'destroy');
     },
 
     /* attribute changed callback */

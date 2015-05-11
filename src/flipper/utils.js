@@ -16,6 +16,16 @@ utils.each = function(obj, fn) {
     }
 };
 
+var REGEX_TRIM = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+
+utils.trim = function trim(str) {
+    if (typeof str === 'string') {
+        return str.trim ? str.trim() : str.replace(REGEX_TRIM, '');
+    } else {
+        return str;
+    }
+};
+
 utils.format = function format(pattern) {
     var i = 0;
     pattern.replace(/%s/, function() {
@@ -32,13 +42,26 @@ utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
-
+var debugEnable = false;
+utils.debug = function debug() {
+    if (!debugEnable) {
+        return;
+    }
+    var msg = utils.format.apply(utils, arguments);
+    if (typeof console.log === 'function') {
+        console.log(msg);
+    }
+};
 
 utils.log = function log() {
     var msg = utils.format.apply(utils, arguments);
     if (typeof console.log === 'function') {
         console.log(msg);
     }
+};
+
+utils.error = function(err) {
+    console.error(err.stack || err);
 };
 
 function doesGetOwnPropertyDescriptorWork(object) {
@@ -140,4 +163,29 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
             }
         }
     }
+};
+
+utils.isCustomTag = function(tagName) {
+    return tagName && tagName.lastIndexOf('-') >= 0;
+};
+
+utils.event = {
+    on: function(node, method, callback) {
+        node.addEventListener(method, callback, false);
+    },
+    trigger: function(node, method, params) {
+        var event = new CustomEvent(method);
+        node.dispatchEvent(event);
+    },
+    create: function(method) {
+        return new CustomEvent(method);
+    }
+};
+
+utils.query = function(node, selector) {
+    return node.querySelector(selector);
+};
+
+utils.query.all = function(node, selector) {
+    return node.querySelectorAll(selector);
 };

@@ -1,9 +1,35 @@
 var components = {};
 
+var waitings = {};
+
+function waitingComponent(name, node, callback) {
+    var component = components[name];
+
+    if (component && component.isReady()) {
+        callback(component, node);
+    } else {
+        if (!waitings[name]) {
+            waitings[name] = [];
+        }
+
+        waitings[name].push({
+            node: node,
+            callback: callback
+        });
+    }
+}
+
 function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
+        component.on('initialized', function() {
+            if (waitings[name]) {
+                utils.each(waitings[name], function(obj) {
+                    obj.callback(component, obj.node);
+                });
+            }
+        });
     }
 
     if (component.isReady()) {
@@ -302,6 +328,10 @@ if (window.FlipperPolyfill) {
 
 Flipper.getComponent = function getComponent(name) {
     return components[name];
+};
+
+Flipper.hasCompoent = function hasCompoent(name) {
+    return !!Flipper.getComponent(name);
 };
 
 Flipper.getComponentHelpers = function getComponentHelpers(name) {
