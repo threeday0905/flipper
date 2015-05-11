@@ -225,29 +225,34 @@ utils.event = {
         if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
-            request$(node).on('method', callback);
+            request$(node).on(method, callback);
         }
 
     },
     trigger: function(node, method) {
         if (supportCustomEvent && !isIE) {
-            node.dispatchEvent( utils.event.create(method) );
+            var event = new CustomEvent(method);
+            node.dispatchEvent( event );
         } else {
-            request$(node).trigger('method');
+            request$(node).trigger(method);
         }
 
     },
-    create: function(method) {
-        var event;
-        if (supportCustomEvent) {
-            event = new CustomEvent(method);
-        } else if (document.createEvent) {
-            event = document.createEvent('HTMLEvents');
-            event.initEvent(method, true, true);
-        } else {
-            event = {};
+    halt: function(ev) {
+        ev = ev || window.event;
+        if (ev) {
+            if (ev.stopPropagation) {
+                ev.stopPropagation();
+            } else {
+                ev.cancelBubble = true;
+            }
+
+            if (ev.preventDefault) {　　
+                ev.preventDefault();
+            } else {
+                ev.returnValue = false;
+            }
         }
-        return event;
     }
 };
 

@@ -31,10 +31,14 @@ Flipper.whenReady = function(methods, doms, callback) {
                     return;
                 }
 
-                var ev = utils.event.create(method);
-                callback.call(dom, ev);
+                callback.call(dom);
             } else {
-                utils.event.on(dom, method, callback);
+                utils.event.on(dom, method, function(ev) {
+                    if (ev.target === dom) {
+                        utils.event.halt(ev);
+                        callback.call(dom);
+                    }
+                });
             }
         }
     }
