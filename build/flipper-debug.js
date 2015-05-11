@@ -1,3 +1,184 @@
+(function(root) {
+
+	// Use polyfill for setImmediate for performance gains
+	var asap = Promise.immediateFn || (typeof setImmediate === 'function' && setImmediate) ||
+		function(fn) { setTimeout(fn, 1); };
+
+	// Polyfill for Function.prototype.bind
+	function bind(fn, thisArg) {
+		return function() {
+			fn.apply(thisArg, arguments);
+		}
+	}
+
+	var isArray = Array.isArray || function(value) { return Object.prototype.toString.call(value) === "[object Array]" };
+
+	function Promise(fn) {
+		if (typeof this !== 'object') throw new TypeError('Promises must be constructed via new');
+		if (typeof fn !== 'function') throw new TypeError('not a function');
+		this._state = null;
+		this._value = null;
+		this._deferreds = []
+
+		doResolve(fn, bind(resolve, this), bind(reject, this))
+	}
+
+	function handle(deferred) {
+		var me = this;
+		if (this._state === null) {
+			this._deferreds.push(deferred);
+			return
+		}
+		asap(function() {
+			var cb = me._state ? deferred.onFulfilled : deferred.onRejected
+			if (cb === null) {
+				(me._state ? deferred.resolve : deferred.reject)(me._value);
+				return;
+			}
+			var ret;
+			try {
+				ret = cb(me._value);
+			}
+			catch (e) {
+				deferred.reject(e);
+				return;
+			}
+			deferred.resolve(ret);
+		})
+	}
+
+	function resolve(newValue) {
+		try { //Promise Resolution Procedure: https://github.com/promises-aplus/promises-spec#the-promise-resolution-procedure
+			if (newValue === this) throw new TypeError('A promise cannot be resolved with itself.');
+			if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
+				var then = newValue.then;
+				if (typeof then === 'function') {
+					doResolve(bind(then, newValue), bind(resolve, this), bind(reject, this));
+					return;
+				}
+			}
+			this._state = true;
+			this._value = newValue;
+			finale.call(this);
+		} catch (e) { reject.call(this, e); }
+	}
+
+	function reject(newValue) {
+		this._state = false;
+		this._value = newValue;
+		finale.call(this);
+	}
+
+	function finale() {
+		for (var i = 0, len = this._deferreds.length; i < len; i++) {
+			handle.call(this, this._deferreds[i]);
+		}
+		this._deferreds = null;
+	}
+
+	function Handler(onFulfilled, onRejected, resolve, reject){
+		this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null;
+		this.onRejected = typeof onRejected === 'function' ? onRejected : null;
+		this.resolve = resolve;
+		this.reject = reject;
+	}
+
+	/**
+	 * Take a potentially misbehaving resolver function and make sure
+	 * onFulfilled and onRejected are only called once.
+	 *
+	 * Makes no guarantees about asynchrony.
+	 */
+	function doResolve(fn, onFulfilled, onRejected) {
+		var done = false;
+		try {
+			fn(function (value) {
+				if (done) return;
+				done = true;
+				onFulfilled(value);
+			}, function (reason) {
+				if (done) return;
+				done = true;
+				onRejected(reason);
+			})
+		} catch (ex) {
+			if (done) return;
+			done = true;
+			onRejected(ex);
+		}
+	}
+
+	Promise.prototype['catch'] = function (onRejected) {
+		return this.then(null, onRejected);
+	};
+
+	Promise.prototype.then = function(onFulfilled, onRejected) {
+		var me = this;
+		return new Promise(function(resolve, reject) {
+			handle.call(me, new Handler(onFulfilled, onRejected, resolve, reject));
+		})
+	};
+
+	Promise.all = function () {
+		var args = Array.prototype.slice.call(arguments.length === 1 && isArray(arguments[0]) ? arguments[0] : arguments);
+
+		return new Promise(function (resolve, reject) {
+			if (args.length === 0) return resolve([]);
+			var remaining = args.length;
+			function res(i, val) {
+				try {
+					if (val && (typeof val === 'object' || typeof val === 'function')) {
+						var then = val.then;
+						if (typeof then === 'function') {
+							then.call(val, function (val) { res(i, val) }, reject);
+							return;
+						}
+					}
+					args[i] = val;
+					if (--remaining === 0) {
+						resolve(args);
+					}
+				} catch (ex) {
+					reject(ex);
+				}
+			}
+			for (var i = 0; i < args.length; i++) {
+				res(i, args[i]);
+			}
+		});
+	};
+
+	Promise.resolve = function (value) {
+		if (value && typeof value === 'object' && value.constructor === Promise) {
+			return value;
+		}
+
+		return new Promise(function (resolve) {
+			resolve(value);
+		});
+	};
+
+	Promise.reject = function (value) {
+		return new Promise(function (resolve, reject) {
+			reject(value);
+		});
+	};
+
+	Promise.race = function (values) {
+		return new Promise(function (resolve, reject) {
+			for(var i = 0, len = values.length; i < len; i++) {
+				values[i].then(resolve, reject);
+			}
+		});
+	};
+
+	if (typeof module !== 'undefined' && module.exports) {
+		module.exports = Promise;
+	} else if (!root.Promise) {
+		root.Promise = Promise;
+	}
+
+})(this);
 (function() {
 'use strict';
 
@@ -50,7 +231,8 @@ var configs = {
 
 var Flipper = {
     version: '@@VERSION@@',
-    configs: configs
+    configs: configs,
+    useNative: !!document.registerElement
 };
 
 Flipper.config = function(key, value) {
@@ -245,9 +427,49 @@ function request$(args) {
     return window.jQuery(args);
 }
 
+var supportCustomEvent = !!window.CustomEvent;
+
+if (supportCustomEvent) {
+    try {
+        new CustomEvent('xyz');
+    } catch (ex) {
+        supportCustomEvent = false;
+    }
+}
+
+var isIE = (function() {
+    function detectIE() {
+        var ua = window.navigator.userAgent;
+
+        var msie = ua.indexOf('MSIE ');
+        if (msie > 0) {
+            // IE 10 or older => return version number
+            return parseInt(ua.substring(msie + 5, ua.indexOf('.', msie)), 10);
+        }
+
+        var trident = ua.indexOf('Trident/');
+        if (trident > 0) {
+            // IE 11 => return version number
+            var rv = ua.indexOf('rv:');
+            return parseInt(ua.substring(rv + 3, ua.indexOf('.', rv)), 10);
+        }
+
+        var edge = ua.indexOf('Edge/');
+        if (edge > 0) {
+           // IE 12 => return version number
+           return parseInt(ua.substring(edge + 5, ua.indexOf('.', edge)), 10);
+        }
+
+        // other browser
+        return false;
+    }
+
+    return detectIE();
+}());
+
 utils.event = {
     on: function(node, method, callback) {
-        if (node.addEventListener) {
+        if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
             request$(node).on('method', callback);
@@ -255,7 +477,7 @@ utils.event = {
 
     },
     trigger: function(node, method) {
-        if (node.dispatchEvent) {
+        if (supportCustomEvent && !isIE) {
             node.dispatchEvent( utils.event.create(method) );
         } else {
             request$(node).trigger('method');
@@ -264,17 +486,24 @@ utils.event = {
     },
     create: function(method) {
         var event;
-        if (window.CustomEvent) {
+        if (supportCustomEvent) {
             event = new CustomEvent(method);
-        } else {
+        } else if (document.createEvent) {
             event = document.createEvent('HTMLEvents');
             event.initEvent(method, true, true);
+        } else {
+            event = {};
         }
         return event;
     }
 };
 
 utils.query = function(node, selector) {
+    if (arguments.length === 1) {
+        selector = node;
+        node = document;
+    }
+
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
@@ -283,6 +512,11 @@ utils.query = function(node, selector) {
 };
 
 utils.query.all = function(node, selector) {
+    if (arguments.length === 1) {
+        selector = node;
+        node = document;
+    }
+
     if (node.querySelectorAll) {
         return node.querySelectorAll(selector);
     } else {
@@ -492,7 +726,7 @@ function goThroughIfReady(currentCount, goThrough) {
 
 ComponentDefinition.prototype = {
     ready: function(onFulfillment, onRejection) {
-        return this.promiseAll.then(onFulfillment, onRejection);
+        return this.promiseAll.then(onFulfillment)['catch'](onRejection);
     },
     mixinProto: function(newProto) {
         var self = this;
@@ -654,7 +888,8 @@ function tryCallLifeCycleEvent(element, methodName, args) {
 }
 
 function createElementProto(component) {
-    var elementProto = utils.createObject(HTMLElement.prototype);
+    var element = window.HTMLElement || window.Element, /* for fuck IE */
+        elementProto = utils.createObject(element.prototype);
 
     elementProto._lifeCycle = {};
 
@@ -790,20 +1025,21 @@ function Component(name) {
 Component.prototype = {
     /* event */
     on: function(name, fn) {
-        if (!this._events) {
-            this._events = {};
+        if (!this.__events__) {
+            this.__events__ = {};
         }
 
-        if (!this._events[name]) {
-            this._events[name] = [];
+        if (!this.__events__[name]) {
+            this.__events__[name] = [];
         }
 
-        this._events[name].push(fn);
+        this.__events__[name].push(fn);
     },
     fire: function(name) {
-        if (this._events && this._events[name]) {
-            utils.each(this._events[name], function(fn) {
-                fn();
+        var self = this;
+        if (this.__events__ && this.__events__[name]) {
+            utils.each(this.__events__[name], function(fn) {
+                fn(self);
             });
         }
     },
@@ -831,7 +1067,7 @@ Component.prototype = {
         throwIfAlreadyRegistered(this);
         this.prepare(this.definition.proto);
 
-        if (document.registerElement) {
+        if (Flipper.useNative) {
             document.registerElement(this.name, {
                 prototype: this.elementProto
             });
@@ -842,8 +1078,8 @@ Component.prototype = {
 
         this.fire('initialized');
     },
-    parse: function(dom) {
-        if (!dom.__flipper__) {
+    transform: function(dom) {
+        if (!dom.__flipper__) { /* transform it if the node is empty */
             utils.mixin(dom, this.elementProto);
             dom.createdCallback();
             dom.attachedCallback();
@@ -890,21 +1126,21 @@ Component.prototype = {
             }
         };
 
-        if (!result) {
+        if (!result && this.definitionEle) {
             utils.eachChildNodes(this.definitionEle, function(ele) {
                 return ele.tagName && ele.tagName.toLowerCase() === 'template';
             }, function(ele) {
                 return setupTplIfIdMatched(ele);
             });
-        }
 
-        if (!result) {
-            utils.eachChildNodes(this.definitionEle, function(ele) {
-                return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
-                        ele.getAttribute('type') === 'template';
-            }, function(ele) {
-                return setupTplIfIdMatched(ele);
-            });
+            if (!result) {
+                utils.eachChildNodes(this.definitionEle, function(ele) {
+                    return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
+                            ele.getAttribute('type') === 'template';
+                }, function(ele) {
+                    return setupTplIfIdMatched(ele);
+                });
+            }
         }
 
         if (!result && viewName === 'index') {
@@ -1064,6 +1300,10 @@ Component.prototype = {
         element.removeAttribute('unresolved');
         element.initialized = true;
         utils.event.trigger(element, 'initialized');
+
+        if (!Flipper.useNative) {
+            Flipper.parse(element);
+        }
     },
 
     /* detach cycle methods */
@@ -1121,6 +1361,7 @@ var components = {};
 var waitings = {};
 
 function waitingComponent(name, node, callback) {
+    name = name.toLowerCase();
     var component = components[name];
 
     if (component && component.isReady()) {
@@ -1141,11 +1382,12 @@ function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function() {
+        component.on('initialized', function(component) {
             if (waitings[name]) {
                 utils.each(waitings[name], function(obj) {
                     obj.callback(component, obj.node);
                 });
+                waitings[name] = null;
             }
         });
     }
@@ -1428,7 +1670,7 @@ function registerFromDeclarationTag(ele) {
  */
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
-if (document.registerElement) {
+if (Flipper.useNative) {
     document.registerElement(Flipper.configs.declarationTag /* web-component */, {
         prototype: utils.createObject(HTMLElement.prototype, {
             createdCallback: {
@@ -1459,6 +1701,57 @@ Flipper.getComponentHelpers = function getComponentHelpers(name) {
 };
 
 Flipper.components = components;
+
+function isCustomNode(node) {
+    return node && node.tagName &&
+        utils.isCustomTag( node.tagName );
+}
+
+function getNodeObj(node) {
+    if (typeof node === 'string') {
+        return utils.query(node);
+    } else {
+        return node;
+    }
+}
+
+Flipper.init = function init(node) {
+    if (Flipper.useNative) {
+        return false;
+    }
+
+    node = getNodeObj(node);
+
+    if (!isCustomNode(node)) {
+        return false;
+    }
+
+    if (node.initialized) {
+        return false;
+    }
+
+    waitingComponent(node.tagName, node, function(component, node) {
+        component.transform(node);
+    });
+
+    return true;
+};
+
+Flipper.parse = function(node) {
+    if (Flipper.useNative) {
+        return false;
+    }
+
+    node = getNodeObj(node);
+
+    utils.eachChildNodes(node, undefined, function(ele) {
+        if (isCustomNode(ele)) {
+            Flipper.init(ele);
+        } else if (ele.childNodes && ele.childNodes.length) {
+            Flipper.parse(ele);
+        }
+    });
+};
 
 Flipper.findShadow = function(target, selector) {
     return utils.query.all(target.shadowRoot, selector);
