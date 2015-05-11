@@ -1,16 +1,6 @@
 (function() {
 'use strict';
 
-/*
-    TODO Polyfills:
-    - all es5 feature (Object.keys, Array.isArray, Object.create, etc.)
-    - new URL
-    - Promise
-    - document base uri
-
-    IE: ?
- */
-
 /* the _currentScript prop may be already polyfill from webcomponentsjs */
 if (!document._currentScript) {
     var currentScriptDescriptor = {
@@ -27,6 +17,29 @@ if (!document._currentScript) {
     };
 
     Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+}
+
+if (!Function.prototype.bind) {
+    Function.prototype.bind = function(oThis) {
+        if (typeof this !== 'function') {
+            // closest thing possible to the ECMAScript 5
+            // internal IsCallable function
+            throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+        }
+
+        var aArgs = Array.prototype.slice.call(arguments, 1),
+            fToBind = this,
+            FNOP = function() {},
+            fBound = function() {
+                return fToBind.apply(this instanceof FNOP ? this : oThis,
+                    aArgs.concat(Array.prototype.slice.call(arguments)));
+            };
+
+        FNOP.prototype = this.prototype;
+        fBound.prototype = new FNOP();
+
+        return fBound;
+    };
 }
 
 var configs = {
@@ -94,6 +107,10 @@ utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
 
+utils.isElement = function isElement(obj) {
+    return !!(obj && obj.nodeType === 1);
+};
+
 var debugEnable = false;
 utils.debug = function debug() {
     if (!debugEnable) {
@@ -134,7 +151,7 @@ utils.mixin = function mixin(to, from) {
         return;
     }
     if (supportES5Property) {
-        Object.getOwnPropertyNames(from).forEach(function(name) {
+        utils.each(Object.getOwnPropertyNames(from), function(name) {
             Object.defineProperty(to, name,
                 Object.getOwnPropertyDescriptor(from, name)
             );
@@ -221,25 +238,60 @@ utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
+function request$(args) {
+    if (!window.jQuery) {
+        throw new Error('must include jQuery on IE browser');
+    }
+    return window.jQuery(args);
+}
+
 utils.event = {
     on: function(node, method, callback) {
-        node.addEventListener(method, callback, false);
+        if (node.addEventListener) {
+            node.addEventListener(method, callback, false);
+        } else {
+            request$(node).on('method', callback);
+        }
+
     },
-    trigger: function(node, method, params) {
-        var event = new CustomEvent(method);
-        node.dispatchEvent(event);
+    trigger: function(node, method) {
+        if (node.dispatchEvent) {
+            node.dispatchEvent( utils.event.create(method) );
+        } else {
+            request$(node).trigger('method');
+        }
+
     },
     create: function(method) {
-        return new CustomEvent(method);
+        var event;
+        if (window.CustomEvent) {
+            event = new CustomEvent(method);
+        } else {
+            event = document.createEvent('HTMLEvents');
+            event.initEvent(method, true, true);
+        }
+        return event;
     }
 };
 
 utils.query = function(node, selector) {
-    return node.querySelector(selector);
+    if (node.querySelector) {
+        return node.querySelector(selector);
+    } else {
+        return request$(node).find(selector)[0];
+    }
 };
 
 utils.query.all = function(node, selector) {
-    return node.querySelectorAll(selector);
+    if (node.querySelectorAll) {
+        return node.querySelectorAll(selector);
+    } else {
+        var result = [];
+        request$(node).find(selector).each(function() {
+            result.push(this);
+        });
+        return result;
+    }
 };
 
 var templateEngines = {};
@@ -503,7 +555,7 @@ function throwIfAlreadyRegistered(component) {
 }
 
 function hoistAttributes(component, options, keys) {
-    keys.forEach(function(key) {
+    utils.each(keys, function(key) {
         if (options[key]) {
             component[key] = options[key];
         }
@@ -750,7 +802,7 @@ Component.prototype = {
     },
     fire: function(name) {
         if (this._events && this._events[name]) {
-            this._events[name].forEach(function(fn) {
+            utils.each(this._events[name], function(fn) {
                 fn();
             });
         }
@@ -1185,7 +1237,7 @@ function collectStyleFromNode(node) {
             linkEles.push(ele);
         });
 
-        linkEles.forEach(function(ele) {
+        utils.each(linkEles, function(ele) {
             var href = new URL(ele.getAttribute('href'), baseURI);
             style += '@import "' + href + '";';
             node.removeChild(ele);
@@ -1201,7 +1253,7 @@ function collectStyleFromNode(node) {
             styleEles.push(ele);
         });
 
-        styleEles.forEach(function(ele) {
+        utils.each(styleEles, function(ele) {
             var styleContent = ele.innerHTML;
             style += styleContent;
             node.removeChild(ele);
@@ -1453,9 +1505,13 @@ Flipper.whenReady = function(methods, doms, callback) {
         method = utils.trim(method);
         utils.each(doms, function(dom) {
             if (typeof dom === 'string') {
-                utils.each(utils.query.all(document, dom), function(one) {
-                    bindReadyEvent(one, method);
-                });
+                dom = utils.query.all(document, dom);
+
+                if (dom && dom.length) {
+                    for (var i = 0, len = dom.length; i < len; i += 1) {
+                        bindReadyEvent(dom[i], method);
+                    }
+                }
             } else {
                 bindReadyEvent(dom, method);
             }
