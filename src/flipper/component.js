@@ -258,11 +258,11 @@ Component.prototype = {
 
         this.__events__[name].push(fn);
     },
-    fire: function(name) {
+    fire: function(name, params) {
         var self = this;
         if (this.__events__ && this.__events__[name]) {
             utils.each(this.__events__[name], function(fn) {
-                fn(self);
+                fn.apply(self, params || []);
             });
         }
     },
@@ -315,11 +315,9 @@ Component.prototype = {
             error = new Error(error);
         }
 
-        this.fire('initialized', error);
+        this.fire('initialized', [ error ]);
 
-        if (error) {
-            throw error;
-        }
+        utils.error(error);
     },
 
     /* configuration methods */
