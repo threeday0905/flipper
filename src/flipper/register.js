@@ -119,7 +119,7 @@ function collectStyleFromNode(node) {
             linkEles.push(ele);
         });
 
-        linkEles.forEach(function(ele) {
+        utils.each(linkEles, function(ele) {
             var href = new URL(ele.getAttribute('href'), baseURI);
             style += '@import "' + href + '";';
             node.removeChild(ele);
@@ -135,7 +135,7 @@ function collectStyleFromNode(node) {
             styleEles.push(ele);
         });
 
-        styleEles.forEach(function(ele) {
+        utils.each(styleEles, function(ele) {
             var styleContent = ele.innerHTML;
             style += styleContent;
             node.removeChild(ele);

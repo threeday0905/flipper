@@ -1,13 +1,3 @@
-/*
-    TODO Polyfills:
-    - all es5 feature (Object.keys, Array.isArray, Object.create, etc.)
-    - new URL
-    - Promise
-    - document base uri
-
-    IE: ?
- */
-
 /* the _currentScript prop may be already polyfill from webcomponentsjs */
 if (!document._currentScript) {
     var currentScriptDescriptor = {
@@ -24,4 +14,27 @@ if (!document._currentScript) {
     };
 
     Object.defineProperty(document, '_currentScript', currentScriptDescriptor);
+}
+
+if (!Function.prototype.bind) {
+    Function.prototype.bind = function(oThis) {
+        if (typeof this !== 'function') {
+            // closest thing possible to the ECMAScript 5
+            // internal IsCallable function
+            throw new TypeError('Function.prototype.bind - what is trying to be bound is not callable');
+        }
+
+        var aArgs = Array.prototype.slice.call(arguments, 1),
+            fToBind = this,
+            FNOP = function() {},
+            fBound = function() {
+                return fToBind.apply(this instanceof FNOP ? this : oThis,
+                    aArgs.concat(Array.prototype.slice.call(arguments)));
+            };
+
+        FNOP.prototype = this.prototype;
+        fBound.prototype = new FNOP();
+
+        return fBound;
+    };
 }

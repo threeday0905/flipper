@@ -43,9 +43,13 @@ Flipper.whenReady = function(methods, doms, callback) {
         method = utils.trim(method);
         utils.each(doms, function(dom) {
             if (typeof dom === 'string') {
-                utils.each(utils.query.all(document, dom), function(one) {
-                    bindReadyEvent(one, method);
-                });
+                dom = utils.query.all(document, dom);
+
+                if (dom && dom.length) {
+                    for (var i = 0, len = dom.length; i < len; i += 1) {
+                        bindReadyEvent(dom[i], method);
+                    }
+                }
             } else {
                 bindReadyEvent(dom, method);
             }

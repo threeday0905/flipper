@@ -12,7 +12,7 @@ function throwIfAlreadyRegistered(component) {
 }
 
 function hoistAttributes(component, options, keys) {
-    keys.forEach(function(key) {
+    utils.each(keys, function(key) {
         if (options[key]) {
             component[key] = options[key];
         }
@@ -259,7 +259,7 @@ Component.prototype = {
     },
     fire: function(name) {
         if (this._events && this._events[name]) {
-            this._events[name].forEach(function(fn) {
+            utils.each(this._events[name], function(fn) {
                 fn();
             });
         }
