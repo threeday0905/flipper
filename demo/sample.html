@@ -10,7 +10,7 @@
     <meta content="width=device-width, initial-scale=1" name="viewport">
 
     <!-- 全局依賴模塊,  hi & flipper -->
-    <script src="http://g.alicdn.daily.taobao.net/hi/modulex/5.0.0/seed.js"></script>
+    <script src="http://g.alicdn.com/hi/modulex/5.0.0/seed.js"></script>
     <script src="http://g.alicdn.daily.taobao.net/crm/flipper/0.4.1/flipper-bundle.js"></script>
     <script src="http://g.alicdn.daily.taobao.net/crm/flipper/0.4.1/vendor/jquery/jquery.js"></script>
 
@@ -46,6 +46,22 @@
 
     <!-- 透過dom節點使用組件api -->
     <script>
+        Flipper.whenReady('ready', ['crm-hello', 'crm-hello2'], function() {
+            console.log(this, 'is ready');
+        });
+
+        Flipper.whenReady('initialized', ['crm-hello', 'crm-hello2'], function() {
+            console.log(this, 'is initialized');
+        });
+
+        Flipper.whenReady('fail', ['crm-hello', 'crm-hello2'], function() {
+            console.log(this, 'is fail');
+        });
+
+        Flipper.whenReady(['crm-hello', 'crm-hello2'], function() {
+            console.log(this, 'is initialized(2)');
+        });
+
         require('lib/jquery/2.1.3/', function($) {
             $('.punch').on('click', function() {
                 var person1 = $('crm-hello')[0],
