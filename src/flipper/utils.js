@@ -141,5 +141,3 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
         }
     }
 };
-
-Flipper.utils = utils;

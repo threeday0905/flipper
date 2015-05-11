@@ -8,7 +8,6 @@
         "./flipper/plugin-loader.js",
         "./flipper/data-center.js",
         "./flipper/definition.js",
-        "./flipper/element.js",
         "./flipper/component.js",
         "./flipper/register.js",
         "./flipper/helpers.js",
