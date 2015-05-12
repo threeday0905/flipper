@@ -3,6 +3,10 @@ Flipper.findShadow = function(target, selector) {
 };
 
 function attachWhenEvent(method, nodes, callback) {
+    if (nodes === undefined || nodes === null) {
+        return;
+    }
+
     if (typeof nodes === 'string' || !nodes.length) {
         nodes = [ nodes ];
     }

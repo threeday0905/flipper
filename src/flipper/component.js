@@ -85,7 +85,7 @@ function mixinElementProto(component, elementProto) {
         if (key === 'model') {
             targetProto.model = elementProto.model;
         } else if (utils.contains(LIFE_EVENTS, key)) {
-            utils.defineProperty(targetProto._lifeCycle, key, descriptor);
+            utils.defineProperty(targetProto.__lifeCycle__, key, descriptor);
 
             if (utils.contains(PUBLIC_LIFE_EVENTS, key)) {
                 utils.defineProperty(targetProto, key, descriptor);
@@ -97,11 +97,11 @@ function mixinElementProto(component, elementProto) {
 }
 
 function hasLifeCycleEvent(element, methodName) {
-    return typeof element._lifeCycle[methodName] === 'function';
+    return typeof element.__lifeCycle__[methodName] === 'function';
 }
 
 function callLifeCycleEvent(element, methodName, args) {
-    return element._lifeCycle[methodName].apply(element, args || []);
+    return element.__lifeCycle__[methodName].apply(element, args || []);
 }
 
 function tryCallLifeCycleEvent(element, methodName, args) {
@@ -114,7 +114,7 @@ function createElementProto(component) {
     var element = window.HTMLElement || window.Element, /* for fuck IE */
         elementProto = utils.createObject(element.prototype);
 
-    elementProto._lifeCycle = {};
+    elementProto.__lifeCycle__ = {};
 
     function wrapCallback(key) {
         var callback = component[key];

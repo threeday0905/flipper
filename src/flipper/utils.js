@@ -183,11 +183,15 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
 };
 
 utils.handleNode = function(node, callback) {
+    if (node === undefined || node === null) {
+        return;
+    }
+
     if (typeof node === 'string') {
         node = utils.query.all(node);
     }
 
-    if (node.length) {
+    if (node.length !== undefined) {
         for ( var i = 0, len = node.length; i < len; i += 1) {
             callback(node[i]);
         }
