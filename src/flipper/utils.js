@@ -294,11 +294,7 @@ utils.cloneNode = function(node) {
     var componentName = node.tagName.toLowerCase(),
         newNode, attrs;
 
-    if (!nodeCache[componentName]) {
-        nodeCache[componentName] = document.createElement(componentName);
-    }
-
-    newNode = nodeCache[componentName].cloneNode(true);
+    newNode = document.createElement(componentName);
 
     if (node.hasAttributes()) {
         attrs = node.attributes;

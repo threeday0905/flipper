@@ -325,24 +325,25 @@ Component.prototype = {
 
         this.fire('initialized');
     },
-    transform: function(dom, needRebuild) {
+    transform: function(node, needRebuild) {
         if (this.status === COMPONENT_STATUS.INITIALIZING) {
             this.on('initialized', function() {
-                this.transform(dom);
+                this.transform(node);
             });
         } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
             /* transform it if the node is empty */
-            if (!dom.__flipper__) {
+
+            if (!node.__flipper__) {
                 if (needRebuild) {
-                    var clonedNode = utils.cloneNode(dom);
-                    clonedNode.__flipper_when__ = dom.__flipper_when__;
-                    dom.parentNode.replaceChild(clonedNode, dom);
-                    dom = clonedNode;
+                    var clonedNode = utils.cloneNode(node);
+                    clonedNode.__flipper_when__ = node.__flipper_when__;
+                    node.parentNode.replaceChild(clonedNode, node);
+                    node = clonedNode;
                 }
 
-                utils.mixin(dom, this.elementProto);
-                dom.createdCallback();
-                dom.attachedCallback();
+                utils.mixin(node, this.elementProto);
+                node.createdCallback();
+                node.attachedCallback();
             }
         }
     },
