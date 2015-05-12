@@ -1,12 +1,14 @@
 ## v0.5.0
 - supports IE8
-- add Flipper.whenReady() API.
 - add Flipper.hasComponent() API.
 - If the component is initialized (included ready and fail), the element.initialized will be true, and remove the "unresolved" attribute.
-- If the component is ready, element.status will be "ready".
-- If the component is render failed, element.status will be "fail".
 - Add the __flipper__ flag to mark the component is Flipper component.
 - build flipper-xtpl.js to included xtemplate.
+- rename status and callback
+    + original: ready - fail - initialized
+    + now: success - fail - ready
++ - add Flipper.whenReady(), Flipper.whenSuccess(), Flipper.whenError() APIs.
++ add refresh callback
 
 ## v0.4.1
 - add destroy() callback
