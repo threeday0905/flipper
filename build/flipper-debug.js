@@ -285,6 +285,19 @@ utils.isArray = Array.isArray || function(arg) {
     return Object.prototype.toString.call(arg) === '[object Array]';
 };
 
+utils.contains = function contains(arr, target) {
+    if (arr.lastIndexOf) {
+        return arr.lastIndexOf(target) > -1;
+    } else {
+        for (var i = 0, len = arr.length; i < len; i += 1) {
+            if (target === arr[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
@@ -866,10 +879,10 @@ function mixinElementProto(component, elementProto) {
 
         if (key === 'model') {
             targetProto.model = elementProto.model;
-        } else if (LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+        } else if (utils.contains(LIFE_EVENTS, key)) {
             utils.defineProperty(targetProto._lifeCycle, key, descriptor);
 
-            if (PUBLIC_LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+            if (utils.contains(PUBLIC_LIFE_EVENTS, key)) {
                 utils.defineProperty(targetProto, key, descriptor);
             }
         } else {
@@ -1040,11 +1053,11 @@ Component.prototype = {
 
         this.__events__[name].push(fn);
     },
-    fire: function(name) {
+    fire: function(name, params) {
         var self = this;
         if (this.__events__ && this.__events__[name]) {
             utils.each(this.__events__[name], function(fn) {
-                fn(self);
+                fn.apply(self, params || []);
             });
         }
     },
@@ -1084,10 +1097,17 @@ Component.prototype = {
         this.fire('initialized');
     },
     transform: function(dom) {
-        if (!dom.__flipper__) { /* transform it if the node is empty */
-            utils.mixin(dom, this.elementProto);
-            dom.createdCallback();
-            dom.attachedCallback();
+        if (this.status === COMPONENT_STATUS.INITIALIZING) {
+            this.on('initialized', function() {
+                this.transform(dom);
+            });
+        } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
+            /* transform it if the node is empty */
+            if (!dom.__flipper__) {
+                utils.mixin(dom, this.elementProto);
+                dom.createdCallback();
+                dom.attachedCallback();
+            }
         }
     },
     markFailed: function(error) {
@@ -1097,11 +1117,9 @@ Component.prototype = {
             error = new Error(error);
         }
 
-        this.fire('initialized', error);
+        this.fire('initialized', [ error ]);
 
-        if (error) {
-            throw error;
-        }
+        utils.error(error);
     },
 
     /* configuration methods */
@@ -1387,13 +1405,15 @@ function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function(component) {
-            if (waitings[name]) {
-                utils.each(waitings[name], function(obj) {
-                    obj.callback(component, obj.node);
-                });
-                waitings[name] = null;
+        component.on('initialized', function(error) {
+            if (!waitings[name]) {
+                return;
             }
+
+            utils.each(waitings[name], function(obj) {
+                obj.callback(component, obj.node);
+            });
+            waitings[name] = null;
         });
     }
 
