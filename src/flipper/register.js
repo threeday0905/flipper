@@ -25,11 +25,13 @@ function createComponent(name) {
     if (!component) {
         component = components[name] = new Flipper.Component(name);
         component.on('initialized', function(error) {
-            if (!error && waitings[name]) {
-                utils.each(waitings[name], function(obj) {
-                    obj.callback(component, obj.node);
-                });
+            if (!waitings[name]) {
+                return;
             }
+
+            utils.each(waitings[name], function(obj) {
+                obj.callback(component, obj.node);
+            });
             waitings[name] = null;
         });
     }

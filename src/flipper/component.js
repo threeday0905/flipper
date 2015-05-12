@@ -84,10 +84,10 @@ function mixinElementProto(component, elementProto) {
 
         if (key === 'model') {
             targetProto.model = elementProto.model;
-        } else if (LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+        } else if (utils.contains(LIFE_EVENTS, key)) {
             utils.defineProperty(targetProto._lifeCycle, key, descriptor);
 
-            if (PUBLIC_LIFE_EVENTS.lastIndexOf(key) > -1 ) {
+            if (utils.contains(PUBLIC_LIFE_EVENTS, key)) {
                 utils.defineProperty(targetProto, key, descriptor);
             }
         } else {
@@ -302,10 +302,17 @@ Component.prototype = {
         this.fire('initialized');
     },
     transform: function(dom) {
-        if (!dom.__flipper__) { /* transform it if the node is empty */
-            utils.mixin(dom, this.elementProto);
-            dom.createdCallback();
-            dom.attachedCallback();
+        if (this.status === COMPONENT_STATUS.INITIALIZING) {
+            this.on('initialized', function() {
+                this.transform(dom);
+            });
+        } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
+            /* transform it if the node is empty */
+            if (!dom.__flipper__) {
+                utils.mixin(dom, this.elementProto);
+                dom.createdCallback();
+                dom.attachedCallback();
+            }
         }
     },
     markFailed: function(error) {

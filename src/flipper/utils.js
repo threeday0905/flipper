@@ -38,6 +38,19 @@ utils.isArray = Array.isArray || function(arg) {
     return Object.prototype.toString.call(arg) === '[object Array]';
 };
 
+utils.contains = function contains(arr, target) {
+    if (arr.lastIndexOf) {
+        return arr.lastIndexOf(target) > -1;
+    } else {
+        for (var i = 0, len = arr.length; i < len; i += 1) {
+            if (target === arr[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+
 utils.isPromise = function isPromise(obj) {
     return obj && typeof obj.then === 'function';
 };
