@@ -15,10 +15,12 @@
     <script src="./share/share-js.js"></script>
     <script src="./component/ie8-sample.js"></script>
     <script src="./component/ie8-wrapper.js"></script>
+    <script src="./component/ie8-error.js"></script>
 
     <link rel="stylesheet" type="text/css" href="./share/share-css.css">
     <link rel="stylesheet" type="text/css" href="./component/ie8-sample.css">
     <link rel="stylesheet" type="text/css" href="./component/ie8-wrapper.css">
+    <link rel="stylesheet" type="text/css" href="./component/ie8-error.css">
 </head>
 
 <body>
@@ -26,30 +28,54 @@
     <ie8-wrapper id="a"></ie8-wrapper>
     <br>
     <ie8-sample id="b" sub="sub"></ie8-sample>
-
+    <br>
+    <ie8-error id="c" sub="sub"></ie8-error>
+    <br>
     <script>
-    Flipper.whenReady('ready', '#a', function() {
-       write('ie8-wrapper is ready') ;
-    });
-    Flipper.whenReady('initialized', '#a', function() {
-       write('ie8-wrapper is initialized') ;
-    });
-    Flipper.whenReady('fail', '#a', function() {
-       write('ie8-wrapper is fail') ;
-    });
+        Flipper.whenSuccess('#a', function() {
+           window.writeboard('[flipper] ie8-wrapper is render success') ;
+        });
+        Flipper.whenError([ '#a' ], function() {
+           window.writeboard('[flipper] ie8-wrapper is render fail') ;
+        });
+        Flipper.whenReady(document.querySelector('#a'), function() {
+           window.writeboard('[flipper] ie8-wrapper is initialized') ;
+        });
 
-    Flipper.whenReady('ready', document.getElementById('b'), function() {
-       write('ie8-sample is ready') ;
-    });
-    Flipper.whenReady('initialized', document.getElementById('b'), function() {
-       write('ie8-sample is initialized') ;
-    });
-    Flipper.whenReady('fail', document.getElementById('b'), function() {
-       write('ie8-sample is fail') ;
-    });
+        Flipper.whenSuccess(document.getElementById('b'), function() {
+           window.writeboard('[flipper] ie8-sample is render success') ;
+        });
+        Flipper.whenError(document.querySelectorAll('#b'), function() {
+           window.writeboard('[flipper] ie8-sample is render fail') ;
+        });
+        Flipper.whenReady('#b', function() {
+           window.writeboard('[flipper] ie8-sample is initialized') ;
+        });
+
+        Flipper.whenSuccess([ document.querySelectorAll('#c') ], function() {
+           window.writeboard('[flipper] ie8-error is render success') ;
+        });
+        Flipper.whenError('#c', function() {
+           window.writeboard('[flipper] ie8-error is render fail') ;
+        });
+        Flipper.whenReady([ document.getElementById('c') ], function() {
+           window.writeboard('[flipper] ie8-error is initialized') ;
+        });
+
+        /*$('ie8-error,ie8-wrapper,ie8-sample').on('success', function() {
+            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is render success');
+        });
+        $('ie8-error,ie8-wrapper,ie8-sample').on('error', function() {
+            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is render error');
+        });
+        $('ie8-error,ie8-wrapper,ie8-sample').on('ready', function() {
+            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is initialized');
+        });*/
+
 
         Flipper.init('#a');
         Flipper.init(document.getElementById('b'));
+        Flipper.init(document.querySelectorAll('#c'));
     </script>
 </body>
 

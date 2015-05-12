@@ -12,26 +12,52 @@
 
     <style type="text/css" media="screen">
         x-abc {
-            width: 800px;
-            height: 800px;
+            width: 120px;
+            height: 120px;
             display: block;
             background: green;
+            border: 1px solid black;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 
 <body>
-    <x-abc>
-        TEXT
+    <x-abc id="a">
+        TEXT 1
     </x-abc>
+    <br>
 
-    <script type="text/javascript">
+    <script>
     document.createElement('x-abc');
     </script>
 
     <x-abc>
-        TEXT
+        TEXT 2
     </x-abc>
+    <br>
+    <script>
+    var a = document.getElementById('a'),
+        b = a.cloneNode(true);
+    document.body.appendChild(b);
+
+    var c = document.createElement('x-abc');
+    c.innerHTML = 'TEXT 3';
+    document.body.appendChild(c);
+
+    var d = document.createElement('div');
+    var d1 = document.createElement('x-abc');
+    d1.innerHTML = 'TEXT 4';
+    d.appendChild(d1);
+
+    c.parentNode.insertBefore(d, c.nextSibling);
+
+    var e = document.createElement('div');
+    e.innerHTML = '<x-abc>TEST 5</x-abc>';
+
+    d.parentNode.insertBefore(e, d.nextSibling);
+
+    </script>
 </body>
 
 </html>

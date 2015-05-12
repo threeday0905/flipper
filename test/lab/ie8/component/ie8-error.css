@@ -1,0 +1,13 @@
+ie8-error {
+    width: 200px;
+    height: 200px;
+    padding: 20px;
+    display: block;
+    background-color: pink;
+    border: 5px solid black;
+}
+
+ie8-error h1 {
+    background-color: gray;
+    font-size: 14px;
+}

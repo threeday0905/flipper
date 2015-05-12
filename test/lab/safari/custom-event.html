@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flipper - Safari Test</title>
+    <meta charset="utf-8" />
+
+    <meta content="webkit" name="renderer">
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta content="width=device-width, initial-scale=1" name="viewport">
+
+</head>
+
+<body>
+    <x-test id="a"></x-test>
+
+    <script>
+    var ele = document.getElementById('a');
+
+    ele.addEventListener('test', function() {
+        alert('test');
+    }, false);
+    </script>
+</body>
+
+</html>
