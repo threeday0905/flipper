@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Flipper UI - demo</title>
+    <title>Flipper IE8 - Test</title>
     <meta charset="utf-8" />
 
     <meta content="webkit" name="renderer">
@@ -61,17 +61,6 @@
         Flipper.whenReady([ document.getElementById('c') ], function() {
            window.writeboard('[flipper] ie8-error is initialized') ;
         });
-
-        /*$('ie8-error,ie8-wrapper,ie8-sample').on('success', function() {
-            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is render success');
-        });
-        $('ie8-error,ie8-wrapper,ie8-sample').on('error', function() {
-            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is render error');
-        });
-        $('ie8-error,ie8-wrapper,ie8-sample').on('ready', function() {
-            window.writeboard('[jquery] ' + this.tagName.toLowerCase() + ' is initialized');
-        });*/
-
 
         Flipper.init('#a');
         Flipper.init(document.getElementById('b'));

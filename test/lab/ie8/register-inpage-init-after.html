@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Flipper UI - demo</title>
+    <title>Flipper IE8 - Test</title>
     <meta charset="utf-8" />
 
     <meta content="webkit" name="renderer">
@@ -11,7 +11,6 @@
 
     <script src="../../../build/flipper-xtpl-debug.js"></script>
     <script src="../../../build/vendor/jquery/jquery.js"></script>
-
 </head>
 
 <body>
@@ -19,45 +18,56 @@
     <ie8-wrapper id="a"></ie8-wrapper>
     <br>
     <ie8-sample id="b" sub="sub"></ie8-sample>
-    <hr><br>
-
-
-    <script src="./share/share-js.js"></script>
-    <script src="./component/ie8-sample.js"></script>
-    <script src="./component/ie8-wrapper.js"></script>
-
-    <link rel="stylesheet" type="text/css" href="./share/share-css.css">
-    <link rel="stylesheet" type="text/css" href="./component/ie8-sample.css">
-    <link rel="stylesheet" type="text/css" href="./component/ie8-wrapper.css">
+    <br>
+    <ie8-error id="c" sub="sub"></ie8-error>
+    <br>
 
     <script>
-        Flipper.whenReady('ready', '#a', function() {
-           write('ie8-wrapper is ready') ;
+        Flipper.whenSuccess('#a', function() {
+           window.writeboard('[flipper] ie8-wrapper is render success') ;
         });
-        Flipper.whenReady('initialized', '#a', function() {
-           write('ie8-wrapper is initialized') ;
+        Flipper.whenError([ '#a' ], function() {
+           window.writeboard('[flipper] ie8-wrapper is render fail') ;
         });
-        Flipper.whenReady('fail', '#a', function() {
-           write('ie8-wrapper is fail') ;
+        Flipper.whenReady(document.querySelector('#a'), function() {
+           window.writeboard('[flipper] ie8-wrapper is initialized') ;
         });
 
-        Flipper.whenReady('ready', document.getElementById('b'), function() {
-           write('ie8-sample is ready') ;
+        Flipper.whenSuccess(document.getElementById('b'), function() {
+           window.writeboard('[flipper] ie8-sample is render success') ;
         });
-        Flipper.whenReady('initialized', document.getElementById('b'), function() {
-           write('ie8-sample is initialized') ;
+        Flipper.whenError(document.querySelectorAll('#b'), function() {
+           window.writeboard('[flipper] ie8-sample is render fail') ;
         });
-        Flipper.whenReady('fail', document.getElementById('b'), function() {
-           write('ie8-sample is fail') ;
+        Flipper.whenReady('#b', function() {
+           window.writeboard('[flipper] ie8-sample is initialized') ;
+        });
+
+        Flipper.whenSuccess([ document.querySelectorAll('#c') ], function() {
+           window.writeboard('[flipper] ie8-error is render success') ;
+        });
+        Flipper.whenError('#c', function() {
+           window.writeboard('[flipper] ie8-error is render fail') ;
+        });
+        Flipper.whenReady([ document.getElementById('c') ], function() {
+           window.writeboard('[flipper] ie8-error is initialized') ;
         });
 
         Flipper.init('#a');
         Flipper.init(document.getElementById('b'));
+        Flipper.init(document.querySelectorAll('#c'));
     </script>
-    <ie8-sample id="c" sub="sub"></ie8-sample>
-    <script>
-        Flipper.init('#c');
-    </script>
+
+    <script src="./share/share-js.js"></script>
+    <script src="./component/ie8-sample.js"></script>
+    <script src="./component/ie8-wrapper.js"></script>
+    <script src="./component/ie8-error.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="./share/share-css.css">
+    <link rel="stylesheet" type="text/css" href="./component/ie8-sample.css">
+    <link rel="stylesheet" type="text/css" href="./component/ie8-wrapper.css">
+    <link rel="stylesheet" type="text/css" href="./component/ie8-error.css">
+
 </body>
 
 </html>
