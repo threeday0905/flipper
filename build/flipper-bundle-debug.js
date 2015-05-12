@@ -2504,7 +2504,7 @@ window.FlipperPolyfill = {
 'use strict';
 
 /* the _currentScript prop may be already polyfill from webcomponentsjs */
-if (!document._currentScript) {
+if (Object.defineProperty && !document._currentScript) {
     var currentScriptDescriptor = {
         get: function() {
             var script = document.currentScript ||
@@ -2750,22 +2750,37 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
     }
 };
 
+utils.handleNode = function(node, callback) {
+    if (typeof node === 'string') {
+        node = utils.query.all(node);
+    }
+
+    if (node.length) {
+        for ( var i = 0, len = node.length; i < len; i += 1) {
+            callback(node[i]);
+        }
+    } else {
+        callback(node);
+    }
+};
+
 utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
-function request$(args) {
+utils.requestjQuery = function rquestjQuery(args) {
     if (!window.jQuery) {
         throw new Error('must include jQuery on IE browser');
     }
     return window.jQuery(args);
-}
+};
 
 var supportCustomEvent = !!window.CustomEvent;
 
 if (supportCustomEvent) {
     try {
-        new CustomEvent('xyz');
+        /* jshint nonew: false */
+        new window.CustomEvent('xyz');
     } catch (ex) {
         supportCustomEvent = false;
     }
@@ -2806,7 +2821,7 @@ utils.event = {
         if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
-            request$(node).on(method, callback);
+            utils.rquestjQuery(node).on(method, callback);
         }
 
     },
@@ -2815,7 +2830,7 @@ utils.event = {
             var event = new CustomEvent(method);
             node.dispatchEvent( event );
         } else {
-            request$(node).trigger(method);
+            utils.rquestjQuery(node).trigger(method);
         }
 
     },
@@ -2837,6 +2852,32 @@ utils.event = {
     }
 };
 
+var nodeCache = {};
+
+utils.cloneNode = function(node) {
+    var componentName = node.tagName.toLowerCase(),
+        newNode, attrs;
+
+    if (!nodeCache[componentName]) {
+        nodeCache[componentName] = document.createElement(componentName);
+    }
+
+    newNode = nodeCache[componentName].cloneNode(true);
+
+    if (node.hasAttributes()) {
+        attrs = node.attributes;
+        for (var i = 0, len = attrs.length; i < len; i += 1) {
+            newNode.setAttribute(attrs[i].name, attrs[i].value);
+        }
+    }
+
+    if (node.innerHTML && node.innerHTML.length) {
+        newNode.innerHTML = node.innerHTML;
+    }
+
+    return newNode;
+};
+
 utils.query = function(node, selector) {
     if (arguments.length === 1) {
         selector = node;
@@ -2846,7 +2887,7 @@ utils.query = function(node, selector) {
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
-        return request$(node).find(selector)[0];
+        return utils.rquestjQuery(node).find(selector)[0];
     }
 };
 
@@ -2860,7 +2901,7 @@ utils.query.all = function(node, selector) {
         return node.querySelectorAll(selector);
     } else {
         var result = [];
-        request$(node).find(selector).each(function() {
+        utils.rquestjQuery(node).find(selector).each(function() {
             result.push(this);
         });
         return result;
@@ -3217,7 +3258,7 @@ function hasLifeCycleEvent(element, methodName) {
 }
 
 function callLifeCycleEvent(element, methodName, args) {
-    return element._lifeCycle[methodName].apply(element, args);
+    return element._lifeCycle[methodName].apply(element, args || []);
 }
 
 function tryCallLifeCycleEvent(element, methodName, args) {
@@ -3412,12 +3453,18 @@ Component.prototype = {
             });
         }
 
+        /* register for IE8 and above */
+        if (!Flipper.useNative) {
+            document.createElement(this.name);
+            //var abc = document.createElement(this.name);
+        }
+
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.definition = null;
 
         this.fire('initialized');
     },
-    transform: function(dom) {
+    transform: function(dom, needRebuild) {
         if (this.status === COMPONENT_STATUS.INITIALIZING) {
             this.on('initialized', function() {
                 this.transform(dom);
@@ -3425,6 +3472,17 @@ Component.prototype = {
         } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
             /* transform it if the node is empty */
             if (!dom.__flipper__) {
+                if (needRebuild) {
+                   /* var $dom = utils.requestjQuery(dom),
+                        $new = $dom.clone(true);
+                    $dom.replaceWith($new);
+                    dom = $new[0];
+                    $new = $dom = null;*/
+                    var newDom = utils.cloneNode(dom);
+                    dom.parentNode.replaceChild(newDom, dom);
+                    dom = newDom;
+                }
+
                 utils.mixin(dom, this.elementProto);
                 dom.createdCallback();
                 dom.attachedCallback();
@@ -3624,26 +3682,33 @@ Component.prototype = {
     renderFail: function(element, err) {
         utils.debug(element, 'render fail');
         utils.error(err);
-        element.status = 'fail';
+
+        element.status = 'error';
+        element.reason = err;
+
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
+
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'fail');
+            utils.event.trigger(element, 'error');
         });
     },
     renderSuccess: function(element) {
         utils.debug(element, 'render success');
-        element.status = 'ready';
+
+        element.status = 'success';
+
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'ready');
+            utils.event.trigger(element, 'success');
         });
     },
     renderComplete: function(element) {
         utils.debug(element, 'render complete');
         element.removeAttribute('unresolved');
         element.initialized = true;
-        utils.event.trigger(element, 'initialized');
+
+        utils.event.trigger(element, 'ready');
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
@@ -3709,7 +3774,7 @@ function waitingComponent(name, node, callback) {
     var component = components[name];
 
     if (component && component.isReady()) {
-        callback(component, node);
+        callback(component, node, false);
     } else {
         if (!waitings[name]) {
             waitings[name] = [];
@@ -3726,13 +3791,15 @@ function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function(error) {
+        component.on('initialized', function() {
             if (!waitings[name]) {
                 return;
             }
 
             utils.each(waitings[name], function(obj) {
-                obj.callback(component, obj.node);
+                /* the third parameter is to make the node need to re-created
+                */
+                obj.callback(component, obj.node, true);
             });
             waitings[name] = null;
         });
@@ -4053,49 +4120,45 @@ function isCustomNode(node) {
         utils.isCustomTag( node.tagName );
 }
 
-function getNodeObj(node) {
-    if (typeof node === 'string') {
-        return utils.query(node);
-    } else {
-        return node;
-    }
-}
-
-Flipper.init = function init(node) {
+Flipper.init = function flipperInit(nodes) {
     if (Flipper.useNative) {
         return false;
     }
 
-    node = getNodeObj(node);
-
-    if (!isCustomNode(node)) {
-        return false;
+    function initElement(component, node, needRebuild) {
+        component.transform(node, needRebuild);
     }
 
-    if (node.initialized) {
-        return false;
+    function handler(node) {
+        if (!isCustomNode(node)) {
+            return false;
+        }
+
+        if (node.initialized) {
+            return false;
+        }
+
+        waitingComponent(node.tagName, node, initElement);
     }
 
-    waitingComponent(node.tagName, node, function(component, node) {
-        component.transform(node);
-    });
+    utils.handleNode(nodes, handler);
 
     return true;
 };
 
-Flipper.parse = function(node) {
+Flipper.parse = function flipperParse(nodes) {
     if (Flipper.useNative) {
         return false;
     }
 
-    node = getNodeObj(node);
-
-    utils.eachChildNodes(node, undefined, function(ele) {
-        if (isCustomNode(ele)) {
-            Flipper.init(ele);
-        } else if (ele.childNodes && ele.childNodes.length) {
-            Flipper.parse(ele);
-        }
+    utils.handleNode(nodes, function(node) {
+        utils.eachChildNodes(node, undefined, function(childNode) {
+            if (isCustomNode(childNode)) {
+                Flipper.init(childNode);
+            } else if (childNode.childNodes && childNode.childNodes.length) {
+                Flipper.parse(childNode);
+            }
+        });
     });
 };
 
@@ -4103,65 +4166,60 @@ Flipper.findShadow = function(target, selector) {
     return utils.query.all(target.shadowRoot, selector);
 };
 
-Flipper.whenReady = function(methods, doms, callback) {
-    if (arguments.length === 2) {
-        callback = doms;
-        doms = methods;
-        methods = 'initialized';
-    }
-
-    if (!utils.isArray(doms)) {
-        doms = [ doms ];
+function attachWhenEvent(method, nodes, callback) {
+    if (typeof nodes === 'string' || !nodes.length) {
+        nodes = [ nodes ];
     }
 
     if (typeof callback !== 'function') {
-        callback = utils.noop;
+        return;
     }
 
-    methods = methods.split(',');
+    function handler(node) {
+        utils.debug(node, 'has flag on bind', node.__flipper__);
+        if (!node) {
+            return;
+        }
 
-    function bindReadyEvent(dom, method) {
-        utils.debug(dom, 'has flag on bind', dom.__flipper__);
-        if (dom) {
-            if (dom.initialized) {
-                if (method === 'ready' && dom.status !== 'ready') {
-                    return;
-                }
-
-                if (method === 'fail' && dom.status !== 'fail') {
-                    return;
-                }
-
-                callback.call(dom);
-            } else {
-                utils.event.on(dom, method, function(ev) {
-                    if (ev.target === dom) {
-                        utils.event.halt(ev);
-                        callback.call(dom);
-                    }
-                });
+        if (node.initialized) {
+            if (method === 'success' && node.status !== 'success') {
+                return;
             }
+
+            if (method === 'error' && node.status !== 'error') {
+                return;
+            }
+
+            /* dispatch the error */
+            callback.call(node, node.reason || undefined);
+        } else {
+            utils.event.on(node, method, function(ev) {
+                if (ev.target === node) {
+                    utils.event.halt(ev);
+                    callback.call(node);
+                }
+            });
         }
     }
 
-    utils.each(methods, function(method) {
-        method = utils.trim(method);
-        utils.each(doms, function(dom) {
-            if (typeof dom === 'string') {
-                dom = utils.query.all(document, dom);
+    for (var i = 0, len1 = nodes.length; i < len1; i += 1) {
+        utils.handleNode(nodes[i], handler);
+    }
+}
 
-                if (dom && dom.length) {
-                    for (var i = 0, len = dom.length; i < len; i += 1) {
-                        bindReadyEvent(dom[i], method);
-                    }
-                }
-            } else {
-                bindReadyEvent(dom, method);
-            }
-
-        });
-    });
+Flipper.whenError = function(doms, callback) {
+    attachWhenEvent('error', doms, callback);
 };
+
+Flipper.whenSuccess = function(doms, callback) {
+    attachWhenEvent('success', doms, callback);
+};
+
+Flipper.whenReady = function(doms, callback) {
+    attachWhenEvent('ready', doms, callback);
+};
+
+
 
 function definition() {
     return Flipper;
