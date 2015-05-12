@@ -430,11 +430,15 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
 };
 
 utils.handleNode = function(node, callback) {
+    if (node === undefined || node === null) {
+        return;
+    }
+
     if (typeof node === 'string') {
         node = utils.query.all(node);
     }
 
-    if (node.length) {
+    if (node.length !== undefined) {
         for ( var i = 0, len = node.length; i < len; i += 1) {
             callback(node[i]);
         }
@@ -447,7 +451,7 @@ utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
-utils.requestjQuery = function rquestjQuery(args) {
+utils.requestjQuery = function requestjQuery(args) {
     if (!window.jQuery) {
         throw new Error('must include jQuery on IE browser');
     }
@@ -500,7 +504,7 @@ utils.event = {
         if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
-            utils.rquestjQuery(node).on(method, callback);
+            utils.requestjQuery(node).on(method, callback);
         }
 
     },
@@ -509,7 +513,7 @@ utils.event = {
             var event = new CustomEvent(method);
             node.dispatchEvent( event );
         } else {
-            utils.rquestjQuery(node).trigger(method);
+            utils.requestjQuery(node).trigger(method);
         }
 
     },
@@ -537,11 +541,7 @@ utils.cloneNode = function(node) {
     var componentName = node.tagName.toLowerCase(),
         newNode, attrs;
 
-    if (!nodeCache[componentName]) {
-        nodeCache[componentName] = document.createElement(componentName);
-    }
-
-    newNode = nodeCache[componentName].cloneNode(true);
+    newNode = document.createElement(componentName);
 
     if (node.hasAttributes()) {
         attrs = node.attributes;
@@ -566,7 +566,7 @@ utils.query = function(node, selector) {
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
-        return utils.rquestjQuery(node).find(selector)[0];
+        return utils.requestjQuery(node).find(selector)[0];
     }
 };
 
@@ -580,7 +580,7 @@ utils.query.all = function(node, selector) {
         return node.querySelectorAll(selector);
     } else {
         var result = [];
-        utils.rquestjQuery(node).find(selector).each(function() {
+        utils.requestjQuery(node).find(selector).each(function() {
             result.push(this);
         });
         return result;
@@ -921,7 +921,7 @@ function mixinElementProto(component, elementProto) {
         if (key === 'model') {
             targetProto.model = elementProto.model;
         } else if (utils.contains(LIFE_EVENTS, key)) {
-            utils.defineProperty(targetProto._lifeCycle, key, descriptor);
+            utils.defineProperty(targetProto.__flipper_lifecycle__, key, descriptor);
 
             if (utils.contains(PUBLIC_LIFE_EVENTS, key)) {
                 utils.defineProperty(targetProto, key, descriptor);
@@ -933,11 +933,11 @@ function mixinElementProto(component, elementProto) {
 }
 
 function hasLifeCycleEvent(element, methodName) {
-    return typeof element._lifeCycle[methodName] === 'function';
+    return typeof element.__flipper_lifecycle__[methodName] === 'function';
 }
 
 function callLifeCycleEvent(element, methodName, args) {
-    return element._lifeCycle[methodName].apply(element, args || []);
+    return element.__flipper_lifecycle__[methodName].apply(element, args || []);
 }
 
 function tryCallLifeCycleEvent(element, methodName, args) {
@@ -946,11 +946,25 @@ function tryCallLifeCycleEvent(element, methodName, args) {
     }
 }
 
+function triggerExternalLifeEvent(element, methodName) {
+    utils.event.trigger(element, methodName);
+
+    var flipperEvents = element.__flipper_when__;
+
+    if (flipperEvents && flipperEvents[methodName]) {
+        utils.each(flipperEvents[methodName], function(callback) {
+            if (typeof callback === 'function') {
+                callback.call(element);
+            }
+        });
+    }
+}
+
 function createElementProto(component) {
     var element = window.HTMLElement || window.Element, /* for fuck IE */
         elementProto = utils.createObject(element.prototype);
 
-    elementProto._lifeCycle = {};
+    elementProto.__flipper_lifecycle__ = {};
 
     function wrapCallback(key) {
         var callback = component[key];
@@ -1029,7 +1043,10 @@ function createElementProto(component) {
                     }
                 }
 
-                var renderComplete = component.renderComplete.bind(component, element);
+                var renderComplete = component.renderComplete.bind(component, element),
+                    handleRefreshComplete = function() {
+                        utils.event.trigger(element, 'refresh');
+                    };
 
                 return Promise.resolve()
                         .then(component.renderBegin.bind(component, element))
@@ -1037,7 +1054,8 @@ function createElementProto(component) {
                         .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
                         ['catch'](component.renderFail.bind(component, element))
-                        .then(renderComplete, renderComplete);
+                        .then(renderComplete, renderComplete)
+                        .then(handleRefreshComplete);
             }
         },
         createdCallback: {
@@ -1143,28 +1161,25 @@ Component.prototype = {
 
         this.fire('initialized');
     },
-    transform: function(dom, needRebuild) {
+    transform: function(node, needRebuild) {
         if (this.status === COMPONENT_STATUS.INITIALIZING) {
             this.on('initialized', function() {
-                this.transform(dom);
+                this.transform(node);
             });
         } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
             /* transform it if the node is empty */
-            if (!dom.__flipper__) {
+
+            if (!node.__flipper__) {
                 if (needRebuild) {
-                   /* var $dom = utils.requestjQuery(dom),
-                        $new = $dom.clone(true);
-                    $dom.replaceWith($new);
-                    dom = $new[0];
-                    $new = $dom = null;*/
-                    var newDom = utils.cloneNode(dom);
-                    dom.parentNode.replaceChild(newDom, dom);
-                    dom = newDom;
+                    var clonedNode = utils.cloneNode(node);
+                    clonedNode.__flipper_when__ = node.__flipper_when__;
+                    node.parentNode.replaceChild(clonedNode, node);
+                    node = clonedNode;
                 }
 
-                utils.mixin(dom, this.elementProto);
-                dom.createdCallback();
-                dom.attachedCallback();
+                utils.mixin(node, this.elementProto);
+                node.createdCallback();
+                node.attachedCallback();
             }
         }
     },
@@ -1342,6 +1357,10 @@ Component.prototype = {
         target.innerHTML = html;
     },
     addStyle: function(element) {
+        if (!this.style || !this.style.length) {
+            return;
+        }
+
         var style = document.createElement('style');
         style.textContent = this.style;
         style.setAttribute('referance-to', this.name);
@@ -1368,7 +1387,7 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'error');
+            triggerExternalLifeEvent(element, 'error');
         });
     },
     renderSuccess: function(element) {
@@ -1379,7 +1398,7 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'success');
+            triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
@@ -1387,10 +1406,15 @@ Component.prototype = {
         element.removeAttribute('unresolved');
         element.initialized = true;
 
-        utils.event.trigger(element, 'ready');
+        triggerExternalLifeEvent(element, 'ready');
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
+        }
+
+        if (element.__flipper_when___) {
+            element.__flipper_when__ = null;
+            delete element.__flipper_when__;
         }
     },
 
@@ -1448,21 +1472,18 @@ var components = {};
 
 var waitings = {};
 
-function waitingComponent(name, node, callback) {
+function waitingComponent(name, callback) {
     name = name.toLowerCase();
     var component = components[name];
 
     if (component && component.isReady()) {
-        callback(component, node, false);
+        callback(component);
     } else {
         if (!waitings[name]) {
             waitings[name] = [];
         }
 
-        waitings[name].push({
-            node: node,
-            callback: callback
-        });
+        waitings[name].push(callback);
     }
 }
 
@@ -1475,10 +1496,8 @@ function createComponent(name) {
                 return;
             }
 
-            utils.each(waitings[name], function(obj) {
-                /* the third parameter is to make the node need to re-created
-                */
-                obj.callback(component, obj.node, true);
+            utils.each(waitings[name], function(callback) {
+                callback(component);
             });
             waitings[name] = null;
         });
@@ -1779,7 +1798,7 @@ if (window.FlipperPolyfill) {
 }
 
 Flipper.getComponent = function getComponent(name) {
-    return components[name];
+    return components[name.toLowerCase()];
 };
 
 Flipper.hasCompoent = function hasCompoent(name) {
@@ -1787,7 +1806,7 @@ Flipper.hasCompoent = function hasCompoent(name) {
 };
 
 Flipper.getComponentHelpers = function getComponentHelpers(name) {
-    var component = components[name];
+    var component = Flipper.getComponent(name);
 
     return component ? component.getHelpers() : {};
 };
@@ -1804,10 +1823,6 @@ Flipper.init = function flipperInit(nodes) {
         return false;
     }
 
-    function initElement(component, node, needRebuild) {
-        component.transform(node, needRebuild);
-    }
-
     function handler(node) {
         if (!isCustomNode(node)) {
             return false;
@@ -1817,7 +1832,15 @@ Flipper.init = function flipperInit(nodes) {
             return false;
         }
 
-        waitingComponent(node.tagName, node, initElement);
+        var component = Flipper.getComponent(node.tagName);
+
+        if (component && component.isReady()) {
+            component.transform(node);
+        } else {
+            waitingComponent(node.tagName, function(component) {
+                component.transform(node, true);
+            });
+        }
     }
 
     utils.handleNode(nodes, handler);
@@ -1846,6 +1869,10 @@ Flipper.findShadow = function(target, selector) {
 };
 
 function attachWhenEvent(method, nodes, callback) {
+    if (nodes === undefined || nodes === null) {
+        return;
+    }
+
     if (typeof nodes === 'string' || !nodes.length) {
         nodes = [ nodes ];
     }
@@ -1872,12 +1899,17 @@ function attachWhenEvent(method, nodes, callback) {
             /* dispatch the error */
             callback.call(node, node.reason || undefined);
         } else {
-            utils.event.on(node, method, function(ev) {
-                if (ev.target === node) {
-                    utils.event.halt(ev);
-                    callback.call(node);
-                }
-            });
+            if (!node.__flipper_when__) {
+                node.__flipper_when__ = {};
+            }
+
+            var flipperEvents = node.__flipper_when__;
+
+            if (!flipperEvents[method]) {
+                flipperEvents[method] = [];
+            }
+
+            flipperEvents[method].push(callback);
         }
     }
 
