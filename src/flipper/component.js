@@ -85,7 +85,7 @@ function mixinElementProto(component, elementProto) {
         if (key === 'model') {
             targetProto.model = elementProto.model;
         } else if (utils.contains(LIFE_EVENTS, key)) {
-            utils.defineProperty(targetProto.__lifeCycle__, key, descriptor);
+            utils.defineProperty(targetProto.__flipper_lifecycle__, key, descriptor);
 
             if (utils.contains(PUBLIC_LIFE_EVENTS, key)) {
                 utils.defineProperty(targetProto, key, descriptor);
@@ -97,11 +97,11 @@ function mixinElementProto(component, elementProto) {
 }
 
 function hasLifeCycleEvent(element, methodName) {
-    return typeof element.__lifeCycle__[methodName] === 'function';
+    return typeof element.__flipper_lifecycle__[methodName] === 'function';
 }
 
 function callLifeCycleEvent(element, methodName, args) {
-    return element.__lifeCycle__[methodName].apply(element, args || []);
+    return element.__flipper_lifecycle__[methodName].apply(element, args || []);
 }
 
 function tryCallLifeCycleEvent(element, methodName, args) {
@@ -110,11 +110,25 @@ function tryCallLifeCycleEvent(element, methodName, args) {
     }
 }
 
+function triggerExternalLifeEvent(element, methodName) {
+    utils.event.trigger(element, methodName);
+
+    var flipperEvents = element.__flipper_when__;
+
+    if (flipperEvents && flipperEvents[methodName]) {
+        utils.each(flipperEvents[methodName], function(callback) {
+            if (typeof callback === 'function') {
+                callback.call(element);
+            }
+        });
+    }
+}
+
 function createElementProto(component) {
     var element = window.HTMLElement || window.Element, /* for fuck IE */
         elementProto = utils.createObject(element.prototype);
 
-    elementProto.__lifeCycle__ = {};
+    elementProto.__flipper_lifecycle__ = {};
 
     function wrapCallback(key) {
         var callback = component[key];
@@ -193,7 +207,10 @@ function createElementProto(component) {
                     }
                 }
 
-                var renderComplete = component.renderComplete.bind(component, element);
+                var renderComplete = component.renderComplete.bind(component, element),
+                    handleRefreshComplete = function() {
+                        utils.event.trigger(element, 'refresh');
+                    };
 
                 return Promise.resolve()
                         .then(component.renderBegin.bind(component, element))
@@ -201,7 +218,8 @@ function createElementProto(component) {
                         .then(component.renderSuccess.bind(component, element))
                         .then(callback.bind(element))
                         ['catch'](component.renderFail.bind(component, element))
-                        .then(renderComplete, renderComplete);
+                        .then(renderComplete, renderComplete)
+                        .then(handleRefreshComplete);
             }
         },
         createdCallback: {
@@ -316,14 +334,10 @@ Component.prototype = {
             /* transform it if the node is empty */
             if (!dom.__flipper__) {
                 if (needRebuild) {
-                   /* var $dom = utils.requestjQuery(dom),
-                        $new = $dom.clone(true);
-                    $dom.replaceWith($new);
-                    dom = $new[0];
-                    $new = $dom = null;*/
-                    var newDom = utils.cloneNode(dom);
-                    dom.parentNode.replaceChild(newDom, dom);
-                    dom = newDom;
+                    var clonedNode = utils.cloneNode(dom);
+                    clonedNode.__flipper_when__ = dom.__flipper_when__;
+                    dom.parentNode.replaceChild(clonedNode, dom);
+                    dom = clonedNode;
                 }
 
                 utils.mixin(dom, this.elementProto);
@@ -506,6 +520,10 @@ Component.prototype = {
         target.innerHTML = html;
     },
     addStyle: function(element) {
+        if (!this.style || !this.style.length) {
+            return;
+        }
+
         var style = document.createElement('style');
         style.textContent = this.style;
         style.setAttribute('referance-to', this.name);
@@ -532,7 +550,7 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'error');
+            triggerExternalLifeEvent(element, 'error');
         });
     },
     renderSuccess: function(element) {
@@ -543,7 +561,7 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'success');
+            triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
@@ -551,10 +569,15 @@ Component.prototype = {
         element.removeAttribute('unresolved');
         element.initialized = true;
 
-        utils.event.trigger(element, 'ready');
+        triggerExternalLifeEvent(element, 'ready');
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
+        }
+
+        if (element.__flipper_when___) {
+            element.__flipper_when__ = null;
+            delete element.__flipper_when__;
         }
     },
 

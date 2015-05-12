@@ -2,21 +2,18 @@ var components = {};
 
 var waitings = {};
 
-function waitingComponent(name, node, callback) {
+function waitingComponent(name, callback) {
     name = name.toLowerCase();
     var component = components[name];
 
     if (component && component.isReady()) {
-        callback(component, node, false);
+        callback(component);
     } else {
         if (!waitings[name]) {
             waitings[name] = [];
         }
 
-        waitings[name].push({
-            node: node,
-            callback: callback
-        });
+        waitings[name].push(callback);
     }
 }
 
@@ -29,10 +26,8 @@ function createComponent(name) {
                 return;
             }
 
-            utils.each(waitings[name], function(obj) {
-                /* the third parameter is to make the node need to re-created
-                */
-                obj.callback(component, obj.node, true);
+            utils.each(waitings[name], function(callback) {
+                callback(component);
             });
             waitings[name] = null;
         });
@@ -333,7 +328,7 @@ if (window.FlipperPolyfill) {
 }
 
 Flipper.getComponent = function getComponent(name) {
-    return components[name];
+    return components[name.toLowerCase()];
 };
 
 Flipper.hasCompoent = function hasCompoent(name) {
@@ -341,7 +336,7 @@ Flipper.hasCompoent = function hasCompoent(name) {
 };
 
 Flipper.getComponentHelpers = function getComponentHelpers(name) {
-    var component = components[name];
+    var component = Flipper.getComponent(name);
 
     return component ? component.getHelpers() : {};
 };

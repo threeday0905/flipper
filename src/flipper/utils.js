@@ -204,7 +204,7 @@ utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
-utils.requestjQuery = function rquestjQuery(args) {
+utils.requestjQuery = function requestjQuery(args) {
     if (!window.jQuery) {
         throw new Error('must include jQuery on IE browser');
     }
@@ -257,7 +257,7 @@ utils.event = {
         if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
-            utils.rquestjQuery(node).on(method, callback);
+            utils.requestjQuery(node).on(method, callback);
         }
 
     },
@@ -266,7 +266,7 @@ utils.event = {
             var event = new CustomEvent(method);
             node.dispatchEvent( event );
         } else {
-            utils.rquestjQuery(node).trigger(method);
+            utils.requestjQuery(node).trigger(method);
         }
 
     },
@@ -323,7 +323,7 @@ utils.query = function(node, selector) {
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
-        return utils.rquestjQuery(node).find(selector)[0];
+        return utils.requestjQuery(node).find(selector)[0];
     }
 };
 
@@ -337,7 +337,7 @@ utils.query.all = function(node, selector) {
         return node.querySelectorAll(selector);
     } else {
         var result = [];
-        utils.rquestjQuery(node).find(selector).each(function() {
+        utils.requestjQuery(node).find(selector).each(function() {
             result.push(this);
         });
         return result;

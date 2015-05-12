@@ -8,10 +8,6 @@ Flipper.init = function flipperInit(nodes) {
         return false;
     }
 
-    function initElement(component, node, needRebuild) {
-        component.transform(node, needRebuild);
-    }
-
     function handler(node) {
         if (!isCustomNode(node)) {
             return false;
@@ -21,7 +17,15 @@ Flipper.init = function flipperInit(nodes) {
             return false;
         }
 
-        waitingComponent(node.tagName, node, initElement);
+        var component = Flipper.getComponent(node.tagName);
+
+        if (component && component.isReady()) {
+            component.transform(node);
+        } else {
+            waitingComponent(node.tagName, function(component) {
+                component.transform(node, true);
+            });
+        }
     }
 
     utils.handleNode(nodes, handler);

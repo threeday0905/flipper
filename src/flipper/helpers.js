@@ -33,12 +33,17 @@ function attachWhenEvent(method, nodes, callback) {
             /* dispatch the error */
             callback.call(node, node.reason || undefined);
         } else {
-            utils.event.on(node, method, function(ev) {
-                if (ev.target === node) {
-                    utils.event.halt(ev);
-                    callback.call(node);
-                }
-            });
+            if (!node.__flipper_when__) {
+                node.__flipper_when__ = {};
+            }
+
+            var flipperEvents = node.__flipper_when__;
+
+            if (!flipperEvents[method]) {
+                flipperEvents[method] = [];
+            }
+
+            flipperEvents[method].push(callback);
         }
     }
 
