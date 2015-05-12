@@ -7,7 +7,7 @@ function waitingComponent(name, node, callback) {
     var component = components[name];
 
     if (component && component.isReady()) {
-        callback(component, node);
+        callback(component, node, false);
     } else {
         if (!waitings[name]) {
             waitings[name] = [];
@@ -24,13 +24,15 @@ function createComponent(name) {
     var component = components[name];
     if (!component) {
         component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function(error) {
+        component.on('initialized', function() {
             if (!waitings[name]) {
                 return;
             }
 
             utils.each(waitings[name], function(obj) {
-                obj.callback(component, obj.node);
+                /* the third parameter is to make the node need to re-created
+                */
+                obj.callback(component, obj.node, true);
             });
             waitings[name] = null;
         });

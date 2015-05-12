@@ -2,62 +2,57 @@ Flipper.findShadow = function(target, selector) {
     return utils.query.all(target.shadowRoot, selector);
 };
 
-Flipper.whenReady = function(methods, doms, callback) {
-    if (arguments.length === 2) {
-        callback = doms;
-        doms = methods;
-        methods = 'initialized';
-    }
-
-    if (!utils.isArray(doms)) {
-        doms = [ doms ];
+function attachWhenEvent(method, nodes, callback) {
+    if (typeof nodes === 'string' || !nodes.length) {
+        nodes = [ nodes ];
     }
 
     if (typeof callback !== 'function') {
-        callback = utils.noop;
+        return;
     }
 
-    methods = methods.split(',');
+    function handler(node) {
+        utils.debug(node, 'has flag on bind', node.__flipper__);
+        if (!node) {
+            return;
+        }
 
-    function bindReadyEvent(dom, method) {
-        utils.debug(dom, 'has flag on bind', dom.__flipper__);
-        if (dom) {
-            if (dom.initialized) {
-                if (method === 'ready' && dom.status !== 'ready') {
-                    return;
-                }
-
-                if (method === 'fail' && dom.status !== 'fail') {
-                    return;
-                }
-
-                callback.call(dom);
-            } else {
-                utils.event.on(dom, method, function(ev) {
-                    if (ev.target === dom) {
-                        utils.event.halt(ev);
-                        callback.call(dom);
-                    }
-                });
+        if (node.initialized) {
+            if (method === 'success' && node.status !== 'success') {
+                return;
             }
+
+            if (method === 'error' && node.status !== 'error') {
+                return;
+            }
+
+            /* dispatch the error */
+            callback.call(node, node.reason || undefined);
+        } else {
+            utils.event.on(node, method, function(ev) {
+                if (ev.target === node) {
+                    utils.event.halt(ev);
+                    callback.call(node);
+                }
+            });
         }
     }
 
-    utils.each(methods, function(method) {
-        method = utils.trim(method);
-        utils.each(doms, function(dom) {
-            if (typeof dom === 'string') {
-                dom = utils.query.all(document, dom);
+    for (var i = 0, len1 = nodes.length; i < len1; i += 1) {
+        utils.handleNode(nodes[i], handler);
+    }
+}
 
-                if (dom && dom.length) {
-                    for (var i = 0, len = dom.length; i < len; i += 1) {
-                        bindReadyEvent(dom[i], method);
-                    }
-                }
-            } else {
-                bindReadyEvent(dom, method);
-            }
-
-        });
-    });
+Flipper.whenError = function(doms, callback) {
+    attachWhenEvent('error', doms, callback);
 };
+
+Flipper.whenSuccess = function(doms, callback) {
+    attachWhenEvent('success', doms, callback);
+};
+
+Flipper.whenReady = function(doms, callback) {
+    attachWhenEvent('ready', doms, callback);
+};
+
+

@@ -1,5 +1,5 @@
 /* the _currentScript prop may be already polyfill from webcomponentsjs */
-if (!document._currentScript) {
+if (Object.defineProperty && !document._currentScript) {
     var currentScriptDescriptor = {
         get: function() {
             var script = document.currentScript ||

@@ -182,22 +182,37 @@ utils.eachChildNodes = function(ele, checkFn, callbackFn) {
     }
 };
 
+utils.handleNode = function(node, callback) {
+    if (typeof node === 'string') {
+        node = utils.query.all(node);
+    }
+
+    if (node.length) {
+        for ( var i = 0, len = node.length; i < len; i += 1) {
+            callback(node[i]);
+        }
+    } else {
+        callback(node);
+    }
+};
+
 utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
-function request$(args) {
+utils.requestjQuery = function rquestjQuery(args) {
     if (!window.jQuery) {
         throw new Error('must include jQuery on IE browser');
     }
     return window.jQuery(args);
-}
+};
 
 var supportCustomEvent = !!window.CustomEvent;
 
 if (supportCustomEvent) {
     try {
-        new CustomEvent('xyz');
+        /* jshint nonew: false */
+        new window.CustomEvent('xyz');
     } catch (ex) {
         supportCustomEvent = false;
     }
@@ -238,7 +253,7 @@ utils.event = {
         if (supportCustomEvent && !isIE) {
             node.addEventListener(method, callback, false);
         } else {
-            request$(node).on(method, callback);
+            utils.rquestjQuery(node).on(method, callback);
         }
 
     },
@@ -247,7 +262,7 @@ utils.event = {
             var event = new CustomEvent(method);
             node.dispatchEvent( event );
         } else {
-            request$(node).trigger(method);
+            utils.rquestjQuery(node).trigger(method);
         }
 
     },
@@ -269,6 +284,32 @@ utils.event = {
     }
 };
 
+var nodeCache = {};
+
+utils.cloneNode = function(node) {
+    var componentName = node.tagName.toLowerCase(),
+        newNode, attrs;
+
+    if (!nodeCache[componentName]) {
+        nodeCache[componentName] = document.createElement(componentName);
+    }
+
+    newNode = nodeCache[componentName].cloneNode(true);
+
+    if (node.hasAttributes()) {
+        attrs = node.attributes;
+        for (var i = 0, len = attrs.length; i < len; i += 1) {
+            newNode.setAttribute(attrs[i].name, attrs[i].value);
+        }
+    }
+
+    if (node.innerHTML && node.innerHTML.length) {
+        newNode.innerHTML = node.innerHTML;
+    }
+
+    return newNode;
+};
+
 utils.query = function(node, selector) {
     if (arguments.length === 1) {
         selector = node;
@@ -278,7 +319,7 @@ utils.query = function(node, selector) {
     if (node.querySelector) {
         return node.querySelector(selector);
     } else {
-        return request$(node).find(selector)[0];
+        return utils.rquestjQuery(node).find(selector)[0];
     }
 };
 
@@ -292,7 +333,7 @@ utils.query.all = function(node, selector) {
         return node.querySelectorAll(selector);
     } else {
         var result = [];
-        request$(node).find(selector).each(function() {
+        utils.rquestjQuery(node).find(selector).each(function() {
             result.push(this);
         });
         return result;

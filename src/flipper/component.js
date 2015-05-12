@@ -101,7 +101,7 @@ function hasLifeCycleEvent(element, methodName) {
 }
 
 function callLifeCycleEvent(element, methodName, args) {
-    return element._lifeCycle[methodName].apply(element, args);
+    return element._lifeCycle[methodName].apply(element, args || []);
 }
 
 function tryCallLifeCycleEvent(element, methodName, args) {
@@ -296,12 +296,18 @@ Component.prototype = {
             });
         }
 
+        /* register for IE8 and above */
+        if (!Flipper.useNative) {
+            document.createElement(this.name);
+            //var abc = document.createElement(this.name);
+        }
+
         this.status = COMPONENT_STATUS.INITIALIZED;
         this.definition = null;
 
         this.fire('initialized');
     },
-    transform: function(dom) {
+    transform: function(dom, needRebuild) {
         if (this.status === COMPONENT_STATUS.INITIALIZING) {
             this.on('initialized', function() {
                 this.transform(dom);
@@ -309,6 +315,17 @@ Component.prototype = {
         } else if (this.status === COMPONENT_STATUS.INITIALIZED) {
             /* transform it if the node is empty */
             if (!dom.__flipper__) {
+                if (needRebuild) {
+                   /* var $dom = utils.requestjQuery(dom),
+                        $new = $dom.clone(true);
+                    $dom.replaceWith($new);
+                    dom = $new[0];
+                    $new = $dom = null;*/
+                    var newDom = utils.cloneNode(dom);
+                    dom.parentNode.replaceChild(newDom, dom);
+                    dom = newDom;
+                }
+
                 utils.mixin(dom, this.elementProto);
                 dom.createdCallback();
                 dom.attachedCallback();
@@ -508,26 +525,33 @@ Component.prototype = {
     renderFail: function(element, err) {
         utils.debug(element, 'render fail');
         utils.error(err);
-        element.status = 'fail';
+
+        element.status = 'error';
+        element.reason = err;
+
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
+
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'fail');
+            utils.event.trigger(element, 'error');
         });
     },
     renderSuccess: function(element) {
         utils.debug(element, 'render success');
-        element.status = 'ready';
+
+        element.status = 'success';
+
         var result = tryCallLifeCycleEvent(element, 'ready');
 
         return Promise.resolve(result).then(function() {
-            utils.event.trigger(element, 'ready');
+            utils.event.trigger(element, 'success');
         });
     },
     renderComplete: function(element) {
         utils.debug(element, 'render complete');
         element.removeAttribute('unresolved');
         element.initialized = true;
-        utils.event.trigger(element, 'initialized');
+
+        utils.event.trigger(element, 'ready');
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
