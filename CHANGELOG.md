@@ -1,5 +1,5 @@
 ## v0.5.0
-- supports IE8
+- supports IE8 and above
 - add Flipper.hasComponent() API.
 - If the component is initialized (included ready and fail), the element.initialized will be true, and remove the "unresolved" attribute.
 - Add the __flipper__ flag to mark the component is Flipper component.
@@ -7,8 +7,8 @@
 - rename status and callback
     + original: ready - fail - initialized
     + now: success - fail - ready
-+ - add Flipper.whenReady(), Flipper.whenSuccess(), Flipper.whenError() APIs.
-+ add refresh callback
+- add Flipper.whenReady(), Flipper.whenSuccess(), Flipper.whenError() APIs.
+- add refresh callback
 
 ## v0.4.1
 - add destroy() callback
