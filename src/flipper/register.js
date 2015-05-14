@@ -220,12 +220,11 @@ function wakeComponentUpIfTimeout(component) {
 
      if (dependencies) {
          var baseURI = tryGetBaseUriFromCurrentScript();
-         dependencies = dependencies.map(function(id) {
-             if (id.charAt(0) === '.') {
-                 return utils.resolveUri(id, baseURI);
-             } else {
-                 return id;
-             }
+         utils.each(dependencies, function(id, index) {
+            if (id.charAt(0) === '.') {
+                id = utils.resolveUri(id, baseURI);
+                dependencies[index] = id;
+            }
          });
 
          if (Flipper.require.check()) {
