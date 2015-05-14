@@ -63,7 +63,7 @@
   "maxdepth"      : 6,
   "maxstatements" : 18,
   "maxcomplexity" : 20,
-  "maxlen"        : 87,
+  "maxlen"        : 100,
 
   "globals": {
     "console"    : false,
