@@ -1170,7 +1170,7 @@ Component.prototype = {
             /* transform it if the node is empty */
 
             if (!node.__flipper__) {
-                if (needRebuild) {
+                if (true || needRebuild) {
                     var clonedNode = utils.cloneNode(node);
                     clonedNode.__flipper_when__ = node.__flipper_when__;
                     node.parentNode.replaceChild(clonedNode, node);
