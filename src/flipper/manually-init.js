@@ -59,10 +59,10 @@ if (!Flipper.useNative) {
     (function() {
         var isReady = false;
 
-        function ready() {
+        function ready(event) {
             // readyState === 'complete' is good enough for us to call the dom ready in oldIE
             if ( document.addEventListener ||
-                 event.type === 'load' ||
+                 ( event && event.type === 'load' ) ||
                  document.readyState === 'complete' ) {
 
                 detach();
