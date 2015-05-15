@@ -548,9 +548,9 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
 
         return Promise.resolve(result).then(function() {
-            triggerExternalLifeEvent(element, 'error');
             element.status = 'error';
             element.reason = err;
+            triggerExternalLifeEvent(element, 'error');
         });
     },
     renderSuccess: function(element) {
@@ -562,9 +562,9 @@ Component.prototype = {
 
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
-            triggerExternalLifeEvent(element, 'success');
             element.status = 'success';
             element.removeAttribute('unresolved');
+            triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
