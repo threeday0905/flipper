@@ -2847,7 +2847,7 @@ utils.event = {
                 ev.cancelBubble = true;
             }
 
-            if (ev.preventDefault) {　　
+            if (ev.preventDefault) {
                 ev.preventDefault();
             } else {
                 ev.returnValue = false;
