@@ -3715,23 +3715,22 @@ Component.prototype = {
         utils.debug(element, 'render success');
 
         element.status = 'success';
+        element.removeAttribute('unresolved');
+
+        if (!Flipper.useNative) {
+            Flipper.parse(element);
+        }
 
         var result = tryCallLifeCycleEvent(element, 'ready');
-
         return Promise.resolve(result).then(function() {
             triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
         utils.debug(element, 'render complete');
-        element.removeAttribute('unresolved');
         element.initialized = true;
 
         triggerExternalLifeEvent(element, 'ready');
-
-        if (!Flipper.useNative) {
-            Flipper.parse(element);
-        }
 
         if (element.__flipper_when___) {
             element.__flipper_when__ = null;
@@ -4194,10 +4193,10 @@ if (!Flipper.useNative) {
     (function() {
         var isReady = false;
 
-        function ready() {
+        function ready(event) {
             // readyState === 'complete' is good enough for us to call the dom ready in oldIE
             if ( document.addEventListener ||
-                 event.type === 'load' ||
+                 ( event && event.type === 'load' ) ||
                  document.readyState === 'complete' ) {
 
                 detach();
