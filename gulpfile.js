@@ -7,7 +7,7 @@ var gulp     = require('gulp'),
     clean    = require('gulp-clean'),
     sequence = require('run-sequence');
 
-var buildHelper = require('./tool/build-helper'),
+var buildHelper = require('./toolkit/build-helper'),
     perrier = require('perrier'),
     resolve = require('path').resolve;
 

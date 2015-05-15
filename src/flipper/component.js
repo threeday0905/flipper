@@ -545,20 +545,16 @@ Component.prototype = {
         utils.debug(element, 'render fail');
         utils.error(err);
 
-        element.status = 'error';
-        element.reason = err;
-
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
 
         return Promise.resolve(result).then(function() {
             triggerExternalLifeEvent(element, 'error');
+            element.status = 'error';
+            element.reason = err;
         });
     },
     renderSuccess: function(element) {
         utils.debug(element, 'render success');
-
-        element.status = 'success';
-        element.removeAttribute('unresolved');
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
@@ -567,6 +563,8 @@ Component.prototype = {
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
             triggerExternalLifeEvent(element, 'success');
+            element.status = 'success';
+            element.removeAttribute('unresolved');
         });
     },
     renderComplete: function(element) {
