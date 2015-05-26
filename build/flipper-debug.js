@@ -1383,6 +1383,10 @@ Component.prototype = {
 
         var result = tryCallLifeCycleEvent(element, 'fail', [ err ] );
 
+        if (!Flipper.useNative) {
+            Flipper.parse(element);
+        }
+
         return Promise.resolve(result).then(function() {
             element.status = 'error';
             element.reason = err;

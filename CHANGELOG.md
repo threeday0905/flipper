@@ -1,3 +1,7 @@
+## v0.5.3
+- bugfix
+- add auto-parse on render failed
+
 ## v0.5.0
 - supports IE8 and above
 - add Flipper.hasComponent() API.
