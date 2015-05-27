@@ -1801,7 +1801,7 @@ Flipper.getComponent = function getComponent(name) {
     return components[name.toLowerCase()];
 };
 
-Flipper.hasCompoent = function hasCompoent(name) {
+Flipper.hasComponent = function hasComponent(name) {
     return !!Flipper.getComponent(name);
 };
 
