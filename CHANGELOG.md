@@ -1,3 +1,6 @@
+## v0.5.4
+- adding build toolkit. use `require('flipper/toolkit/builder')` to get the module
+
 ## v0.5.3
 - bugfix
 - add auto-parse on render failed
