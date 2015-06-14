@@ -1,4 +1,4 @@
-**文檔不知道在寫什麼** 建議直接看 /demo/ui-lab/index.html
+**文档整理中，建议直接看** [example](http://gitlab.alibaba-inc.com/crm/flipper-examples)
 
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br>
 <br><br><br><br><br><br><br><br><br><br><br><br><br><br>
