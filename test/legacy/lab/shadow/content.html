@@ -1,0 +1,62 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+    <script src="../../../../build/flipper-xtpl-debug.js"></script>
+</head>
+
+<body>
+    <div id="nameTag">
+        <h1><strong>Herman</strong> *)*</h1>
+        <h2>Lee</h2>
+    </div>
+    <template id="nameTagTemplate">
+        <style>
+        .outer {
+            border: 2px solid brown;
+            border-radius: 1em;
+            background: red;
+            font-size: 20pt;
+            width: 12em;
+            height: 7em;
+            text-align: center;
+        }
+
+        .boilerplate {
+            color: white;
+            font-family: sans-serif;
+            padding: 0.5em;
+        }
+
+        .name {
+            color: black;
+            background: white;
+            font-family: "Marker Felt", cursive;
+            font-size: 45pt;
+            padding-top: 0.2em;
+        }
+        </style>
+        <div class="outer">
+            <div class="boilerplate">
+                Hi! My name is
+            </div>
+            <div class="name">
+                <h1><content select="h1"></conent></h1>
+            </div>
+        </div>
+    </template>
+
+    <script>
+    (function() {
+        var shadow = document.querySelector('#nameTag').createShadowRoot(),
+            template = document.querySelector('#nameTagTemplate');
+
+        var clone = document.importNode(template.content, true);
+        shadow.appendChild(clone);
+
+    }());
+    </script>
+</body>
+
+</html>

@@ -3,28 +3,29 @@
 
 <head>
     <title>Flipper - Test Runner</title>
-    <script src="../../../build/flipper-bundle-debug.js"></script>
+    <script src="../../../build/flipper-xtpl-debug.js"></script>
 
     <link rel="import" href="./components/rdc-card.html">
     <link rel="import" href="./components/rdc-card-cover.html">
 </head>
 
 <body>
-    <!-- rdc-card: 不指定参数，就是预设样式 -->
     <rdc-card></rdc-card>
 
-    <!-- rdc-card: 可以指定具体的名字跟职称 -->
     <rdc-card>
         <h1>Jason Chan</h1>
         <strong class="title">Sr. Frontend Developer</strong>
     </rdc-card>
 
-    <!-- rdc-card: 可以省略职称 -->
     <rdc-card>
         <h1>Simon Su</h1>
     </rdc-card>
 
-    <!-- rdc-card-cover: 这个组件会把所有的content都放入 -->
+    <!-- <rdc-card-shadow>
+        <h1>Jason Chan</h1>
+        <h2 class="title">Sr. Frontend Developer</h2>
+    </rdc-card-shadow> -->
+
     <rdc-card-cover>
         <h1>Customize Card Title</h1>
         <p> Customize Card Content</p>
@@ -38,14 +39,8 @@
         }
     </style>
 
-    <!-- 能在组件初始化之前，就针对映射节点绑定事件，事件不会丢失 -->
     <script>
-    var cards = document.querySelectorAll('rdc-card h1');
-    for (var i = 0, len = cards.length; i < len; i += 1) {
-        cards[i].addEventListener('click', function() {
-            window.alert('you will call ' + this.textContent);
-        }, false);
-    }
+
     </script>
 </body>
 

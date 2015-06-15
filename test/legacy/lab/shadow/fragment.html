@@ -1,0 +1,209 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+    <script src="../../../../build/flipper-xtpl-debug.js"></script>
+</head>
+
+<body>
+    <div id="nameTag">
+        <h1>Herman <strong>Lee</strong></h1>
+        <h2>Front-end developer</h2>
+    </div>
+
+    <div id="target" style="border: 5px solid orange">
+        <h1>header</h1>
+        <div style="padding-left: 50px"><content></content></div>
+        <footer>footer</footer>
+    </div>
+
+    <script>
+        document.querySelector('#nameTag h1').addEventListener('click', function() {
+            alert('click h1');
+        }, false);
+    </script>
+
+    <div id="nameTag2">
+        <h1>Shiba <strong>Ba</strong></h1>
+        <h2 class="title">Front-end specialist</h2>
+    </div>
+
+
+    <div id="target2" style="border: 5px solid pink; margin-top: 20px;">
+        <h1>
+            <content select="h1"></content>
+        </h1>
+
+        <h2>
+            <content select=".title"></content>
+        </h2>
+        <footer>footer</footer>
+    </div>
+
+    <script>
+        document.querySelector('#nameTag2 h1').addEventListener('click', function() {
+            alert('click h1');
+        }, false);
+    </script>
+
+    <div id="nameTag3">
+        <h1>Menu <strong>Ma</strong></h1>
+    </div>
+
+
+    <div id="target3" style="border: 5px solid purple; margin-top: 20px;">
+        <h1>
+            <content select="h1"></content>
+        </h1>
+
+        <h2>
+            <content select=".title" default="<i>CTO</i>"></content>
+        </h2>
+        <footer>footer</footer>
+    </div>
+
+    <script>
+        document.querySelector('#nameTag3 h1').addEventListener('click', function() {
+            alert('click h1');
+        }, false);
+    </script>
+
+
+    <script>
+    function eachChildNodes(ele, checkFn, callbackFn) {
+        var child, i, len, isBreak,
+            hasCheckFn = typeof checkFn === 'function';
+
+        if (ele.childNodes) {
+            for (i = 0, len = ele.childNodes.length; i < len; i += 1) {
+                child = ele.childNodes[i];
+
+                if (!hasCheckFn || checkFn(child)) {
+                    isBreak = callbackFn(child);
+                    if (isBreak === false) {
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    function moveChildNodes(target, src) {
+        if (src.firstChild && target.appendChild) {
+            while (src.firstChild) {
+                target.appendChild(src.firstChild);
+            }
+        }
+    }
+
+    function replaceChildNodes(target, src) {
+        var replaced = false,
+            flagNode = target,
+            targetNode;
+
+        while (src.firstChild) {
+            targetNode = src.firstChild;
+            if (!replaced) {
+                target.parentNode.replaceChild(targetNode, target);
+                replaced = true;
+            } else {
+                flagNode.parentNode.insertBefore(targetNode, flagNode.nextSibling);
+            }
+            flagNode = targetNode;
+        }
+    }
+
+    function lookupContentNode(target, callback) {
+        if (!target || !target.childNodes) {
+            return;
+        }
+
+        var currNode,
+            nextNode = target.firstChild;
+
+        while(nextNode) {
+            currNode = nextNode;
+            nextNode = currNode.nextSibling;
+
+            if (currNode.nodeType === 1) {
+                if (currNode.tagName === 'CONTENT') {
+                    callback(currNode);
+                } else if (currNode.childNodes && currNode.childNodes.length) {
+                    lookupContentNode(currNode, callback);
+                }
+            }
+        }
+    }
+
+    var matchsMethod, body = document.body;
+
+    if (body.matches) {
+        matchsMethod = 'matches';
+    } else if (body.matchesSelector) {
+        matchsMethod = 'matchesSelector';
+    } else if (body.mozMatchesSelector) {
+        matchsMethod = 'mozMatchesSelector';
+    } else if (body.oMatchesSelector) {
+        matchsMethod = 'oMatchesSelector';
+    } else if (body.msMatchesSelector) {
+        matchsMethod = 'msMatchesSelector';
+    }
+
+    var matchs = matchsMethod ? function(ele, selector) {
+        return ele[matchsMethod](selector);
+    } : function(ele, selector) {
+         var matches = (ele.document || ele.ownerDocument).querySelectorAll(selector);
+
+         var i = 0;
+         while (matches[i] && matches[i] !== ele) {
+           i += 1;
+         }
+
+         return !!matches[i];
+    };
+
+    function handleReflectContent(contentNode, presentNode) {
+        var fragment = document.createDocumentFragment();
+        moveChildNodes(fragment, contentNode);
+
+        lookupContentNode(presentNode, function(content) {
+            var select = content.getAttribute('select'),
+                found = false, defaultWrapper;
+
+            if (select) {
+                eachChildNodes(fragment, function(node) {
+                    return node.nodeType === 1 && matchs(node, select);
+                }, function(matchedContent) {
+                    content.parentNode.replaceChild(matchedContent, content);
+                    found = true;
+                    return false; /* break the iterate */
+                });
+
+                if (!found && content.hasAttribute('default')) {
+                    defaultWrapper = document.createElement('div');
+                    defaultWrapper.innerHTML = content.getAttribute('default');
+                    replaceChildNodes(content, defaultWrapper);
+                }
+            } else {
+                replaceChildNodes(content, fragment);
+            }
+        });
+    }
+
+    handleReflectContent(
+        document.getElementById('nameTag'),
+        document.getElementById('target')
+    );
+    handleReflectContent(
+        document.getElementById('nameTag2'),
+        document.getElementById('target2')
+    );
+    handleReflectContent(
+        document.getElementById('nameTag3'),
+        document.getElementById('target3')
+    );
+    </script>
+</body>
+
+</html>

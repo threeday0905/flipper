@@ -15,6 +15,7 @@
             background-repeat: no-repeat;
             background-position: right bottom;
             box-shadow: 7px 7px 5px 0px #808080;
+            vertical-align: top;
         }
 
         rdc-card h1 {
@@ -33,6 +34,7 @@
         rdc-card h2 strong {
             display: block;
             padding-top: 8px;
+            height: 16px;
         }
 
         rdc-card footer {
@@ -45,15 +47,14 @@
     <template>
         <header>
             <h2>集团客户体验事业群-CXDC-RDC
-                <strong>Sr. Frontend Developer</strong>
+                <strong><content select=".title"></content></strong>
             </h2>
         </header>
 
-        <h1>HERMAN LEE</h1>
+        <div class="name"><content select="h1" default="<h1>NONAME</h1>"></content></div>
 
         <footer>
             We Deliver Customer Value,not Product Features.
         </footer>
     </template>
-
 </web-component>
