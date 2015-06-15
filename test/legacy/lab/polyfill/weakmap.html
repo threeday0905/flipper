@@ -9,7 +9,7 @@
     <meta content="width=device-width, initial-scale=1" name="viewport">
 
     <!-- include flipper.js, jquery & bootstrap, (or angular) -->
-    <link rel="import" href="../../build/flipper-common.html">
+    <script src="../../../../build/flipper.js"></script>
 
 </head>
 
@@ -19,7 +19,6 @@
         var wm1 = new WeakMap();
 
         var o1 = {};
-        debugger;
         wm1.set(o1, 37);
 
         var result = wm1.get(o1);
