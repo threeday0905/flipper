@@ -514,27 +514,34 @@ Component.prototype = {
     },
     createTree: function(element, html) {
         /* if no specific value, then get from flipper global config */
-        var isLightDom = this.injectionMode === 'light-dom' || 'light';
+        var isLightDom = this.injectionMode === 'light-dom' || 'light',
+            contentNode;
 
-        var target = isLightDom ? element : element.createShadowRoot();
-
-        target.innerHTML = html;
+        if (isLightDom) {
+            contentNode = insertionPointUtil.makeContentFragment(element);
+            element.innerHTML = html;
+            insertionPointUtil.handleContentReflect(contentNode, element);
+        } else {
+            element.createShadowRoot().innerHTML = html;
+        }
     },
     addStyle: function(element) {
         if (!this.style || !this.style.length) {
             return;
         }
 
-        var style = document.createElement('style');
-        style.textContent = this.style;
-        style.setAttribute('referance-to', this.name);
+        var style;
 
         if (element.shadowRoot && element.shadowRoot.innerHTML) {
+            style = document.createElement('style');
+            style.textContent = this.style;
             element.shadowRoot.appendChild(style);
         } else {
-            var existsStyle = utils.query(element,
-                'style[referance-to="' + this.name + '"]');
+            var existsStyle = utils.query('style[referance-to="' + this.name + '"]');
             if (!existsStyle) {
+                style = document.createElement('style');
+                style.textContent = this.style;
+                style.setAttribute('referance-to', this.name);
                 (document.head || document.body).appendChild(style);
             }
         }

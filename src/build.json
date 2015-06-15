@@ -5,6 +5,8 @@
         "./flipper/polyfill.js",
         "./flipper/root.js",
         "./flipper/utils.js",
+        "./flipper/jquery-help-ie.js",
+        "./flipper/insertion-point.js",
         "./flipper/plugin-render.js",
         "./flipper/plugin-loader.js",
         "./flipper/data-center.js",
