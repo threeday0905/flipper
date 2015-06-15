@@ -1,3 +1,16 @@
+## v0.5.5
+    - add <content> insertion-point on light-dom
+        - <content> will refecton all content-nodes
+        - <content select="[selector]"></content> will reflect the node which is matched the selector
+        - <content select="[selector]" default="..html.."></content> will display default content, if no matched selector.
+            * warn: it's not default standard.
+
+    - separate util.js to two files:
+        - util.js
+        - jquery-help-ie.js (the file will be renamed, if we polyfill some dom apis on ie8 and below)
+
+    - bugfix
+
 ## v0.5.4
 - adding build toolkit. use `require('flipper/toolkit/builder')` to get the module
 

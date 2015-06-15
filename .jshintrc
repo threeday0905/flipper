@@ -70,6 +70,7 @@
     "expect"     : false,
     "Flipper"    : false,
     "utils"      : false,
+    "insertionPointUtil": false,
     "XTemplate"  : false,
     "define"     : false,
     "require"    : false,
