@@ -49,10 +49,14 @@ var insertionPointUtil = {
                     return false; /* break the iterate */
                 });
 
-                if (!found && content.hasAttribute('default')) {
-                    defaultWrapper = document.createElement('div');
-                    defaultWrapper.innerHTML = content.getAttribute('default');
-                    utils.replaceChildNodes(content, defaultWrapper);
+                if (!found) {
+                    if (content.hasAttribute('default')) {
+                        defaultWrapper = document.createElement('div');
+                        defaultWrapper.innerHTML = content.getAttribute('default');
+                        utils.replaceChildNodes(content, defaultWrapper);
+                    } else {
+                        content.parentNode.removeChild(content);
+                    }
                 }
             } else {
                 utils.replaceChildNodes(content, contentNode);
