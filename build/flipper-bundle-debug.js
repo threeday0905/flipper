@@ -2739,6 +2739,14 @@ utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
+utils.revertEscapedHTML = function(html) {
+    if (!html || !html.replace) {
+        return html;
+    }
+    return html.replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+};
 
 
 function requestjQuery(args) {
@@ -3017,18 +3025,23 @@ var insertionPointUtil = {
     handleContentReflect: function handleContentReflect(contentNode, presentNode) {
         insertionPointUtil.lookupContentNode(presentNode, function(content) {
             var select = content.getAttribute('select'),
-                found = false, defaultWrapper;
+                defaultWrapper, matchedNode;
 
             if (select) {
                 utils.eachChildNodes(contentNode, function(node) {
                     return node.nodeType === 1 && utils.matchSelector(node, select);
-                }, function(matchedContent) {
-                    content.parentNode.replaceChild(matchedContent, content);
-                    found = true;
+                }, function(node) {
+                    matchedNode = node;
                     return false; /* break the iterate */
                 });
 
-                if (!found) {
+                if (matchedNode) {
+                    if (content.hasAttribute('inner')) {
+                        utils.replaceChildNodes(content, matchedNode);
+                    } else {
+                        content.parentNode.replaceChild(matchedNode, content);
+                    }
+                } else {
                     if (content.hasAttribute('default')) {
                         defaultWrapper = document.createElement('div');
                         defaultWrapper.innerHTML = content.getAttribute('default');
@@ -3657,15 +3670,11 @@ Component.prototype = {
         this.views[viewName || 'index'] = viewTpl + '';
     },
     getView: function(viewName) {
-        var result;
-
         viewName = viewName || 'index';
 
-        if (this.views[viewName]) {
-            result = this.views[viewName];
-        }
+        var result;
 
-        var setupTplIfIdMatched = function(ele) {
+        var setupTplIfIdMatched = function(ele, isFragment) {
             if ( (ele.id || 'index') === viewName) {
                 result = ele.innerHTML;
 
@@ -3676,29 +3685,47 @@ Component.prototype = {
                     div.appendChild(ele.content.cloneNode(true));
                     result = div.innerHTML;
                 }
+
+                if (isFragment) {
+                    result = utils.revertEscapedHTML(result);
+                }
+            }
+
+            if (result) {
+                return false; /* return false to break the iterage */
             }
         };
 
-        if (!result && this.definitionEle) {
-            utils.eachChildNodes(this.definitionEle, function(ele) {
-                return ele.tagName && ele.tagName.toLowerCase() === 'template';
-            }, function(ele) {
-                return setupTplIfIdMatched(ele);
-            });
-
-            if (!result) {
+        if (!this.views[viewName]) {
+            if (this.definitionEle) {
                 utils.eachChildNodes(this.definitionEle, function(ele) {
-                    return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
-                            ele.getAttribute('type') === 'template';
+                    return ele.tagName && ele.tagName.toLowerCase() === 'template';
                 }, function(ele) {
-                    return setupTplIfIdMatched(ele);
+                    return setupTplIfIdMatched(ele, true);
                 });
+
+                if (!result) {
+                    utils.eachChildNodes(this.definitionEle, function(ele) {
+                        return ele.tagName && ele.tagName.toLowerCase() === 'script' &&
+                                ele.getAttribute('type') === 'template';
+                    }, function(ele) {
+                        return setupTplIfIdMatched(ele, false);
+                    });
+                }
+
+                if (result) {
+                    this.views[viewName] = result;
+                }
+
             }
+        } else {
+            result = this.views[viewName];
         }
 
         if (!result && viewName === 'index') {
             result = ' '; /* index view can ignore */
         }
+
 
         return result || '';
     },
