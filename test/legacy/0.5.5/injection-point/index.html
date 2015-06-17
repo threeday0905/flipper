@@ -3,10 +3,11 @@
 
 <head>
     <title>Flipper - Test Runner</title>
-    <script src="../../../build/flipper-bundle-debug.js"></script>
+    <script src="../../../../build/flipper-bundle-debug.js"></script>
 
     <link rel="import" href="./components/rdc-card.html">
     <link rel="import" href="./components/rdc-card-cover.html">
+    <link rel="import" href="./components/rdc-card-inner.html">
 </head>
 
 <body>
@@ -24,6 +25,12 @@
         <h1>Simon Su</h1>
     </rdc-card>
 
+    <!-- rdc-card-inner: 將節點的innerHTML注入，而非直接映射 -->
+    <rdc-card-inner>
+        <h1>Mary <mark>May</mark></h1>
+        <strong class="title"><mark>Frontend Speciallist</mark></strong>
+    </rdc-card-inner>
+
     <!-- rdc-card-cover: 这个组件会把所有的content都放入 -->
     <rdc-card-cover>
         <h1>Customize Card Title</h1>
@@ -40,11 +47,18 @@
 
     <!-- 能在组件初始化之前，就针对映射节点绑定事件，事件不会丢失 -->
     <script>
+    function alertIt() {
+        window.alert('you will call ' + this.textContent);
+    }
+
     var cards = document.querySelectorAll('rdc-card h1');
     for (var i = 0, len = cards.length; i < len; i += 1) {
-        cards[i].addEventListener('click', function() {
-            window.alert('you will call ' + this.textContent);
-        }, false);
+        cards[i].addEventListener('click', alertIt, false);
+    }
+
+    var cardsInner = document.querySelectorAll('rdc-card-inner mark');
+    for (var j = 0, len = cardsInner.length; j < len; j += 1) {
+        cardsInner[j].addEventListener('click', alertIt, false);
     }
     </script>
 </body>

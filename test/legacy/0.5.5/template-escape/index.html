@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+    <script src="../../../../build/flipper-bundle-debug.js"></script>
+
+    <web-component name="x-abc" injection-mode="light-dom" template-engine="xtpl">
+        <style>
+            x-abc {
+                display: block;
+            }
+        </style>
+        <template>
+            {{#if (a && b) }}
+                <h1>yes true</h1>
+                {{#if ( a > 3) }}
+                    biggerrrrr
+                {{/if}}
+            {{else}}
+                <h1>no false</h1>
+            {{/if}}
+        </template>
+        <script>
+            Flipper.register({
+                fetch: function() {
+                    var a = this.hasAttribute('a');
+
+                    return a ? {
+                        a: 4,
+                        b: true
+                    } : {};
+                }
+            });
+        </script>
+    </web-component>
+</head>
+
+<body>
+    <x-abc a></x-abc>
+    <x-abc></x-abc>
+</body>
+
+</html>
