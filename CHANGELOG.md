@@ -4,11 +4,13 @@
         - <content select="[selector]"></content> will reflect the node which is matched the selector
         - <content select="[selector]" default="..html.."></content> will display default content, if no matched selector.
             * warn: it's not default standard.
+        - <content select="[selector]" inner> will inject the innerHTML from target node, not whole element.
 
     - separate util.js to two files:
         - util.js
         - jquery-help-ie.js (the file will be renamed, if we polyfill some dom apis on ie8 and below)
 
+    - supported the template which has escaped symbol, such as: &, >, <
     - bugfix
 
 ## v0.5.4

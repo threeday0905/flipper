@@ -171,3 +171,11 @@ utils.isCustomTag = function(tagName) {
     return tagName && tagName.lastIndexOf('-') >= 0;
 };
 
+utils.revertEscapedHTML = function(html) {
+    if (!html || !html.replace) {
+        return html;
+    }
+    return html.replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>');
+};

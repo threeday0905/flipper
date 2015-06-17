@@ -38,18 +38,23 @@ var insertionPointUtil = {
     handleContentReflect: function handleContentReflect(contentNode, presentNode) {
         insertionPointUtil.lookupContentNode(presentNode, function(content) {
             var select = content.getAttribute('select'),
-                found = false, defaultWrapper;
+                defaultWrapper, matchedNode;
 
             if (select) {
                 utils.eachChildNodes(contentNode, function(node) {
                     return node.nodeType === 1 && utils.matchSelector(node, select);
-                }, function(matchedContent) {
-                    content.parentNode.replaceChild(matchedContent, content);
-                    found = true;
+                }, function(node) {
+                    matchedNode = node;
                     return false; /* break the iterate */
                 });
 
-                if (!found) {
+                if (matchedNode) {
+                    if (content.hasAttribute('inner')) {
+                        utils.replaceChildNodes(content, matchedNode);
+                    } else {
+                        content.parentNode.replaceChild(matchedNode, content);
+                    }
+                } else {
                     if (content.hasAttribute('default')) {
                         defaultWrapper = document.createElement('div');
                         defaultWrapper.innerHTML = content.getAttribute('default');
