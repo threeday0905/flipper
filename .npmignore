@@ -117,3 +117,9 @@ log
 .node_history
 .svn
 
+############################
+# Assets
+############################
+CHANGELOG.md
+build
+src

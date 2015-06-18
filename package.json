@@ -2,7 +2,7 @@
   "name": "flipper",
   "version": "0.5.5",
   "description": "another web-component solutions",
-  "main": "build/flipper.js",
+  "main": "toolkit/builder",
   "scripts": {
     "test": "mocha"
   },

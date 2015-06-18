@@ -10,7 +10,9 @@
         - util.js
         - jquery-help-ie.js (the file will be renamed, if we polyfill some dom apis on ie8 and below)
 
-    - supported the template which has escaped symbol, such as: &, >, <
+    - support the template which has escaped symbol, such as: &, >, <
+    - support load component from independent js file
+    - release build tool on tnpm
     - bugfix
 
 ## v0.5.4
