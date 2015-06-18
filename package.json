@@ -1,5 +1,5 @@
 {
-  "name": "flipper",
+  "name": "@ali/flipper",
   "version": "0.5.5",
   "description": "another web-component solutions",
   "main": "toolkit/builder",
@@ -35,5 +35,8 @@
     "promise-polyfill": "2.0.2",
     "webcomponents.js": "0.6.1",
     "xtemplate": "4.2.4"
+  },
+  "publishConfig": {
+    "registry": "http://registry.npm.alibaba-inc.com"
   }
 }
