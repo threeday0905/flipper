@@ -1706,9 +1706,26 @@ function tryGetWrapperFromCurrentScript() {
 }
 
 function tryGetBaseUriFromCurrentScript() {
-    var script = tryGetCurrentScript();
-    return script ?
-        (script.baseURI || script.ownerDocument.baseURI ) : tryGetBaseUri();
+    var script = tryGetCurrentScript(),
+        wrapper = tryGetWrapperFromCurrentScript(),
+        baseURI;
+
+
+    /* ths script is inside <web-component> on independent html file */
+    if (wrapper && wrapper.tagName &&
+            wrapper.tagName.toLowerCase() === Flipper.configs.declarationTag) {
+        baseURI = wrapper.baseURI;
+
+    /* the script is loaded as independent js file*/
+    } else if (script.src) {
+        baseURI = script.src;
+
+    /* otherwise get the base uri. */
+    } else {
+        baseURI = script.baseURI || script.ownerDocument.baseURI;
+    }
+
+    return baseURI || tryGetBaseUri();
 }
 
 function tryGetNameFromCurrentScript() {
