@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+
+    <script src="//g.alicdn.com/hi/modulex/5.0.0/modulex-debug.js"></script>
+    <script src="../../../build/flipper-debug.js"></script>
+
+    <!-- The packge must be defined before compiled js loaded -->
+    <script>
+    require.config('packages', {
+        test: {
+            base: './'
+        }
+    });
+    </script>
+
+    <script src="./components/compiled/all.js"></script>
+    <link rel="stylesheet" href="./components/compiled/all.css">
+</head>
+
+<body>
+    <btn-a></btn-a>
+    <btn-b></btn-b>
+</body>
+
+</html>

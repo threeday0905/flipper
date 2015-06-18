@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+
+    <script src="//g.alicdn.com/hi/modulex/5.0.0/modulex-debug.js"></script>
+    <script src="../../../build/flipper-bundle-debug.js"></script>
+
+    <script src="./components/btn-b.js"></script>
+</head>
+
+<body>
+    <script>
+    var scripts = document.querySelectorAll('script');
+    for (var i = 0, len = scripts.length; i < len; i ++) {
+        alert(scripts[i].src);
+    }
+    </script>
+</body>
+
+</html>

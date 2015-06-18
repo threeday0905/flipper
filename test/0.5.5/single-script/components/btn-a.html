@@ -1,0 +1,22 @@
+<web-component name="btn-a">
+    <style>
+        btn-a {
+            display: block;
+        }
+    </style>
+    <template>
+        <button>BUTTON A</button>
+    </template>
+
+    <script>
+    Flipper.register(['./module/btn-helper'], function(btnHelper) {
+        return {
+            ready: function() {
+                this.addEventListener('click', function() {
+                    btnHelper.click('A');
+                }, false);
+            }
+        };
+    });
+    </script>
+</web-component>
