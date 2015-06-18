@@ -141,38 +141,52 @@ function injectComponentAttrs(component, syntax) {
 function injectComponentTpl(component, syntax) {
     var definition = findComponentPrototype(syntax),
         props = definition.properties,
-        tplDeinition, tplProps;
+        tplDeinition, tplProps, tplDeinitionIndex;
 
+
+    function resetAndCreateTplProp() {
+        tplDeinition = {
+            type: 'ObjectExpression',
+            properties: [ ]
+        };
+
+        return {
+            type: 'Property',
+            key: {
+                type: 'Identifier',
+               name: 'template'
+            },
+            computed: false,
+            value: tplDeinition,
+            kind: 'init',
+            method: false,
+            shorthand: false
+        };
+    }
 
     try {
-        props.forEach(function(prop) {
+        props.forEach(function(prop, index) {
             if (prop.key.name === 'template') {
-                if (prop.value.type !== 'ObjectExpression') {
-                    throw new Error('Flipper template must be an object');
-                }
-
                 tplDeinition = prop.value;
+                tplDeinitionIndex = index;
             }
         });
 
-        if (!tplDeinition) {
-            tplDeinition = {
-                type: 'ObjectExpression',
-                properties: [
-                ]
-            };
-            props.unshift({
-                type: 'Property',
-                key: {
-                    type: 'Identifier',
-                    name: 'template'
-                },
-                computed: false,
-                value: tplDeinition,
-                kind: 'init',
-                method: false,
-                shorthand: false
-            });
+        if (tplDeinition) {
+            /* if component.template is string, trans to object*/
+            if (tplDeinition.type === 'Literal') {
+                component.template.index = tplDeinition.value;
+
+                props.splice(tplDeinitionIndex, 1,
+                    resetAndCreateTplProp()
+                );
+            /* if component.template is not string or object, thorw error */
+            } else if (tplDeinition.type !== 'ObjectExpression') {
+               throw new Error('Flipper template must be an object');
+            }
+        } else {
+            /* if no exists template prop, then create new */
+            props.unshift(resetAndCreateTplProp());
         }
 
         tplProps = tplDeinition.properties;
@@ -185,6 +199,8 @@ function injectComponentTpl(component, syntax) {
                     isExists = true;
                 }
             });
+
+            tplVal = tplVal.trim();
 
             if (!isExists) {
                 tplProps.unshift({
@@ -214,16 +230,27 @@ function injectComponentTpl(component, syntax) {
     }
 }
 
-function injectComponentName(component, syntax) {
+function handleComponentName(component, syntax) {
     try {
         var registerArgs = findRegisterArgs(syntax);
 
-        if (registerArgs.length === 0 || registerArgs[0].type !== 'Literal') {
+        if (registerArgs[0].type === 'Literal') {
+            if (!component.name) {
+                component.name = registerArgs[0].value;
+            } else {
+                throw new Error('component not match! excpet: ' + component.name +
+                    ', but now: ' + registerArgs[0].value);
+            }
+        } else if (registerArgs.length === 0 || registerArgs[0].type !== 'Literal') {
             registerArgs.unshift({
                 type:  'Literal',
                 value: component.name,
                 raw:   component.name
             });
+        }
+
+        if (!component.name) {
+            throw new Error('could not find the component name on file: ' +  component.path);
         }
     } catch (ex) {
         console.error('failed to inject component name');
@@ -278,7 +305,7 @@ function injectPackageName(component, syntax, options) {
 
 function parseComponent(component, fullSyntax, options) {
     var syntax = findFlipperSyntax(fullSyntax);
-    injectComponentName(component, syntax);
+    handleComponentName(component, syntax);
     injectPackageName(component, syntax, options);
     injectComponentTpl(component, syntax);
     injectComponentAttrs(component, syntax);

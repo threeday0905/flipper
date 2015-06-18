@@ -7,16 +7,12 @@ var fs = require('fs'),
 var cheerio = require('cheerio');
 
 var component = require('./lib/component'),
-    external  = require('./lib/external');
+    external  = require('./lib/external'),
+    registerScript = require('./lib/register-script');
 
 
 function handleDocument(filePath, components, externals, options) {
     var $doc;
-
-    if (!fs.existsSync(filePath)) {
-        throw new Error('the file ' + filePath + ' is not exists');
-    }
-
 
     $doc = cheerio.load( fs.readFileSync(filePath) );
     components = components || [];
@@ -51,11 +47,37 @@ function handleDocument(filePath, components, externals, options) {
     };
 }
 
+function handleScript(filePath, components, externals, options) {
+    var componentItem = component.create(filePath);
+    componentItem.register = fs.readFileSync(filePath).toString();
+    registerScript.parse(componentItem, options);
+
+    return {
+        filePath: filePath,
+        components: [
+            componentItem
+        ],
+        externals: []
+    };
+}
+
 
 function compileFile(file, options) {
-    var filePath = path.resolve(options.base, file);
+    var filePath = path.resolve(options.base, file),
+        fileType = path.extname(filePath),
+        result;
 
-    return handleDocument(filePath, undefined, undefined, options);
+    if (!fs.existsSync(filePath)) {
+        throw new Error('the file ' + filePath + ' is not exists');
+    }
+
+    if (fileType === '.js') {
+        result = handleScript(filePath, undefined, undefined, options);
+    } else {
+        result = handleDocument(filePath, undefined, undefined, options);
+    }
+
+    return result;
 }
 
 function makeComponentBanner(component, baseDir) {

@@ -1,6 +1,7 @@
 'use strict';
 
 var cheerio = require('cheerio'),
+    expect  = require('args-expect'),
     loader = require('../util/loader'),
     error  = require('../util/error');
 
@@ -20,8 +21,9 @@ function parseDash(str) {
     return result;
 }
 
-exports.parse = function($ele, filePath, options) {
-    var component = {
+exports.create = function(filePath) {
+    expect(filePath).isString();
+    return {
         name: '',
         style: [],
         script: [],
@@ -30,6 +32,10 @@ exports.parse = function($ele, filePath, options) {
         register: '',
         path: filePath
     };
+};
+
+exports.parse = function($ele, filePath, options) {
+    var component = exports.create(filePath);
 
     component.name = $ele.attr('name');
 
