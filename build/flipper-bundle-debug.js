@@ -3340,14 +3340,15 @@ function hoistWatchers(component, options) {
     }
 
     function isWatcherMethod(key) {
-        return key.substr(key.length - suffix.length);
+        return key.length > suffix.length &&
+            key.substr(key.length - suffix.length) === suffix;
     }
 
     utils.each(options, function(val, key) {
         if (isWatcherMethod(key) && typeof val === 'function') {
             var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
             watchers[attrName] = key;
-            options[key] = null;
+            //options[key] = null;
         }
     });
 }
