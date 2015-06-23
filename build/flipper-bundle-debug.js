@@ -3364,16 +3364,15 @@ function handleViews(component, options) {
         });
     }
 
-    if (options.template) {
-        options.template = null;
-    }
+    options.template = null;
 }
 
 function handleStyle(component, options) {
     if (options.style) {
         component.style = options.style;
-        options.style = null;
     }
+
+    options.style = null;
 }
 
 /* Element Prototype */
