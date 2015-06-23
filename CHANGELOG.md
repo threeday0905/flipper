@@ -1,19 +1,22 @@
-## v0.5.5
-    - add <content> insertion-point on light-dom
-        - <content> will refecton all content-nodes
-        - <content select="[selector]"></content> will reflect the node which is matched the selector
-        - <content select="[selector]" default="..html.."></content> will display default content, if no matched selector.
-            * warn: it's not default standard.
-        - <content select="[selector]" inner> will inject the innerHTML from target node, not whole element.
+## v0.6.1
+- bugfix. no longer to  inject un-cessary fields into element prototype. (style is a necessary prop)
 
-    - separate util.js to two files:
-        - util.js
-        - jquery-help-ie.js (the file will be renamed, if we polyfill some dom apis on ie8 and below)
+## v0.5.5 (v0.6.0)
+- add <content> insertion-point on light-dom
+    - <content> will refecton all content-nodes
+    - <content select="[selector]"></content> will reflect the node which is matched the selector
+    - <content select="[selector]" default="..html.."></content> will display default content, if no matched selector.
+        * warn: it's not default standard.
+    - <content select="[selector]" inner> will inject the innerHTML from target node, not whole element.
 
-    - support the template which has escaped symbol, such as: &, >, <
-    - support load component from independent js file
-    - release build tool on tnpm
-    - bugfix
+- separate util.js to two files:
+    - util.js
+    - jquery-help-ie.js (the file will be renamed, if we polyfill some dom apis on ie8 and below)
+
+- support the template which has escaped symbol, such as: &, >, <
+- support load component from independent js file
+- release build tool on tnpm
+- bugfix
 
 ## v0.5.4
 - adding build toolkit. use `require('flipper/toolkit/builder')` to get the module

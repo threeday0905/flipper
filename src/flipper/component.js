@@ -15,6 +15,7 @@ function hoistAttributes(component, options, keys) {
     utils.each(keys, function(key) {
         if (options[key]) {
             component[key] = options[key];
+            options[key] = null;
         }
     });
 }
@@ -40,6 +41,7 @@ function hoistWatchers(component, options) {
         if (isWatcherMethod(key) && typeof val === 'function') {
             var attrName = parseCamel( key.substr(0, key.length - suffix.length) );
             watchers[attrName] = key;
+            options[key] = null;
         }
     });
 }
@@ -54,11 +56,16 @@ function handleViews(component, options) {
             component.addView(val, key);
         });
     }
+
+    if (options.template) {
+        options.template = null;
+    }
 }
 
 function handleStyle(component, options) {
     if (options.style) {
         component.style = options.style;
+        options.style = null;
     }
 }
 
@@ -77,13 +84,17 @@ var PUBLIC_LIFE_EVENTS = [
     'fetch', 'adapt', 'render'
 ];
 
-function mixinElementProto(component, elementProto) {
+function mixinElementProto(component, options) {
     var targetProto = component.elementProto;
-    utils.each(elementProto, function(val, key) {
-        var descriptor = utils.getDescriptor(elementProto, key);
+    utils.each(options, function(val, key) {
+        if (val === null) {
+            return;
+        }
+
+        var descriptor = utils.getDescriptor(options, key);
 
         if (key === 'model') {
-            targetProto.model = elementProto.model;
+            targetProto.model = options.model;
         } else if (utils.contains(LIFE_EVENTS, key)) {
             utils.defineProperty(targetProto.__flipper_lifecycle__, key, descriptor);
 
@@ -293,7 +304,6 @@ Component.prototype = {
         throwIfAlreadyRegistered(this);
 
         if (elementProto) {
-            mixinElementProto(this, elementProto);
             hoistAttributes(this, elementProto,
                 [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers' ]
             );
@@ -302,6 +312,8 @@ Component.prototype = {
 
             handleViews(this, elementProto);
             handleStyle(this, elementProto);
+
+            mixinElementProto(this, elementProto);
         }
     },
     initialize: function() {
