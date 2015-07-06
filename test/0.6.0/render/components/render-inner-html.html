@@ -1,0 +1,14 @@
+<web-component name="render-inner-html">
+    <style>
+        render-inner-html {
+            display: block;
+        }
+    </style>
+    <script>
+        Flipper.register({
+            render: function() {
+                this.innerHTML = '<h1>inner-html</h1>';
+            }
+        });
+    </script>
+</web-component>

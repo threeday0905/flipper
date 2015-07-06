@@ -1,3 +1,10 @@
+## v0.7.1
+- support customize render method
+    - if has render() method
+        - if returning html, then use it to make dom tree
+        - if returning undefined, then do-nothing, just jump into next step.
+    - if no render() method, then go the default render way.
+
 ## v0.6.1
 - bugfix. no longer to  inject un-cessary fields into element prototype. (style is a necessary prop)
 

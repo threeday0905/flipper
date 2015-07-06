@@ -3466,30 +3466,17 @@ function createElementProto(component) {
             value: component.getView.bind(component)
         },
         renderView: {
-            value: function(viewName, data, options) {
+            value: function(viewName, model, options) {
                 if (typeof viewName === 'object') {
-                    options = data;
-                    data = viewName;
+                    options = model;
+                    model = viewName;
                     viewName = 'index';
                 }
+
                 options = options || {};
                 options.element = this;
 
-                var commands = this.commands;
-
-                if (typeof commands === 'function') {
-                    commands = commands.call(this);
-                }
-
-                if (typeof commands === 'object') {
-                    if (options.commands) {
-                        utils.mixin(options.commands, commands);
-                    } else {
-                        options.commands = commands;
-                    }
-                }
-
-                return component.renderView(viewName, data, options);
+                return component.renderView(viewName, model, options);
             }
         },
         refresh: {
@@ -3572,6 +3559,7 @@ function Component(name) {
 
     this.helpers = {};
     this.watchers = {};
+    this.commands = null;
 
     this.definition.ready(
         this.initialize.bind(this),
@@ -3611,7 +3599,7 @@ Component.prototype = {
 
         if (elementProto) {
             hoistAttributes(this, elementProto,
-                [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers' ]
+                [ 'templateEngine', 'injectionMode', 'definitionEle', 'helpers', 'commands' ]
             );
 
             hoistWatchers(this, elementProto);
@@ -3745,10 +3733,26 @@ Component.prototype = {
         viewName = viewName || 'index';
 
         var templateEngine = Flipper.getTemplateEngine(this.templateEngine),
-            viewId = this.name + '-' + viewName;
+            viewId = this.name + '-' + viewName,
+            element, commands;
 
         if (!templateEngine.hasView(viewId)) {
             templateEngine.addView(viewId, this.getView(viewName));
+        }
+
+        element = options.element;
+        commands = this.commands;
+
+        if (typeof commands === 'function') {
+            commands = commands.call(element);
+        }
+
+        if (typeof commands === 'object') {
+            if (options.commands) {
+                utils.mixin(options.commands, commands);
+            } else {
+                options.commands = commands;
+            }
         }
 
         return templateEngine.renderView(viewId, data, options);
@@ -3814,13 +3818,22 @@ Component.prototype = {
         });
     },
     renderNode: function(element) {
+        var model = this.formatModel(element),
+            html;
+
         if (hasLifeCycleEvent(element, 'render')) {
-            return callLifeCycleEvent(element, 'render');
+            html = callLifeCycleEvent(element, 'render', [ model ]);
         } else {
-            return Promise.resolve()
-                .then(this.formatModel.bind(this, element))
-                .then(this.renderHTML.bind(this, element))
-                .then(this.createTree.bind(this, element));
+            html = this.renderHTML(element, model);
+        }
+
+        /* if returing html, then use the html to make dom tree (createTree()) */
+        if (html !== undefined) {
+            return Promise.resolve(html).then(this.createTree.bind(this, element));
+
+        /* otherwise skip createTree(), jump into next step */
+        } else {
+            return Promise.resolve();
         }
     },
     formatModel: function(element) {
@@ -3832,16 +3845,10 @@ Component.prototype = {
         }
     },
     renderHTML: function(element, model) {
-        var viewName = 'index',
-            commands = element.commands;
-
-        if (typeof commands === 'function') {
-            commands = commands.call(element);
-        }
+        var viewName = 'index';
 
         return this.renderView(viewName, model, {
-            element:  element,
-            commands: commands
+            element:  element
         });
     },
     createTree: function(element, html) {

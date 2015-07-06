@@ -1,0 +1,15 @@
+<web-component name="render-return-html" template-engine="xtpl">
+    <style>
+        render-return-html {
+            display: block;
+        }
+    </style>
+    <template></template>
+    <script>
+        Flipper.register({
+            render: function() {
+                return '<h1>render-return-html</h1>';
+            }
+        });
+    </script>
+</web-component>

@@ -1,0 +1,26 @@
+<web-component name="render-xtpl" template-engine="xtpl">
+    <style>
+        render-xtpl {
+            display: block;
+        }
+    </style>
+    <template>
+        <h1>{{attr("title")}} - {{upperCase("abcd")}}</h1>
+    </template>
+    <script>
+        Flipper.register({
+            fetch: function() {
+                return {
+                    title: 'xtpl'
+                };
+            },
+            commands: function() {
+                return {
+                    upperCase: function(scope, option) {
+                        return option.params[0].toUpperCase();
+                    }
+                };
+            }
+        });
+    </script>
+</web-component>
