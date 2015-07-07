@@ -3806,7 +3806,7 @@ Component.prototype = {
         }
 
         if (!modelId && element.hasAttribute('model-id')) {
-            Flipper.unlinkSpace(element.getAttribute('model-id'));
+            Flipper.dataCenter.unlinkSpace(element.getAttribute('model-id'));
         }
 
         return Promise.resolve(result).then(function(model) {
