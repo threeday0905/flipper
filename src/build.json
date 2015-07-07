@@ -10,6 +10,7 @@
         "./flipper/plugin-render.js",
         "./flipper/plugin-loader.js",
         "./flipper/data-center.js",
+        "./flipper/style-host.js",
         "./flipper/definition.js",
         "./flipper/component.js",
         "./flipper/register.js",

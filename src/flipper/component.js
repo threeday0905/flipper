@@ -459,12 +459,12 @@ Component.prototype = {
 
         /*jshint -W024 */
         Promise.resolve()
+            .then(this.addLightDomStyle.bind(this, element))
             .then(this.renderBegin.bind(this, element))
             .then(this.initElement.bind(this, element))
             .then(this.handleElement.bind(this, element))
             .then(this.renderSuccess.bind(this, element))
             ['catch'](this.renderFail.bind(this, element))
-            .then(this.addStyle.bind(this, element))
             .then(renderComplete, renderComplete);
 
     },
@@ -553,9 +553,12 @@ Component.prototype = {
             element:  element
         });
     },
+    isLightDom: function() {
+        return this.injectionMode === 'light-dom' || 'ligth';
+    },
     createTree: function(element, html) {
         /* if no specific value, then get from flipper global config */
-        var isLightDom = this.injectionMode === 'light-dom' || 'light',
+        var isLightDom = this.isLightDom(),
             contentNode;
 
         if (isLightDom) {
@@ -566,25 +569,26 @@ Component.prototype = {
             element.createShadowRoot().innerHTML = html;
         }
     },
-    addStyle: function(element) {
+    addLightDomStyle: function() {
+        if (!this.isLightDom()) {
+            return;
+        }
+
+        styleHost.add(this.name, this.style);
+    },
+    addShadowDomStyle: function(element) {
+        if (this.isLightDom()) {
+            return;
+        }
+
         if (!this.style || !this.style.length) {
             return;
         }
 
-        var style;
-
         if (element.shadowRoot && element.shadowRoot.innerHTML) {
-            style = document.createElement('style');
-            style.textContent = this.style;
-            element.shadowRoot.appendChild(style);
-        } else {
-            var existsStyle = utils.query('style[referance-to="' + this.name + '"]');
-            if (!existsStyle) {
-                style = document.createElement('style');
-                style.textContent = this.style;
-                style.setAttribute('referance-to', this.name);
-                (document.head || document.body).appendChild(style);
-            }
+            var styleNode = document.createElement('style');
+            styleNode.textContent = this.style;
+            element.shadowRoot.appendChild(styleNode);
         }
 
     },
@@ -607,6 +611,10 @@ Component.prototype = {
     },
     renderSuccess: function(element) {
         utils.debug(element, 'render success');
+
+        if (!this.isLightDom()) {
+            this.addShadowDomStyle(element);
+        }
 
         if (!Flipper.useNative) {
             Flipper.parse(element);
