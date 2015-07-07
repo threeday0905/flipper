@@ -317,8 +317,7 @@ utils.debug = function debug() {
     }
 };
 
-utils.log = function log() {
-    var msg = utils.format.apply(utils, arguments);
+utils.log = function log(msg) {
     if (typeof console.log === 'function') {
         console.log(msg);
     }
