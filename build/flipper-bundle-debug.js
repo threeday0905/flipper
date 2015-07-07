@@ -3099,7 +3099,7 @@ function registerTemplateEngine(name, engine) {
 
             views[viewId] = viewContent;
         },
-        renderView: function(viewId, model, options) {
+        renderView: function(viewId, model, options, component) {
             throwIfViewIdError(viewId);
             var view = views[viewId];
 
@@ -3109,7 +3109,7 @@ function registerTemplateEngine(name, engine) {
             }
 
             options.viewId = viewId;
-            return engine.render(view, model, options);
+            return engine.render(view, model, options, component);
         }
     };
 }
@@ -3755,7 +3755,7 @@ Component.prototype = {
             }
         }
 
-        return templateEngine.renderView(viewId, data, options);
+        return templateEngine.renderView(viewId, data, options, this);
     },
 
     /* created / attached cycle methods */
@@ -3800,6 +3800,10 @@ Component.prototype = {
         } else if (element.hasAttribute('model-id')) {
             modelId = element.getAttribute('model-id');
             result = Flipper.dataCenter.getSpace(modelId);
+        } else if (element.hasAttribute('model-key')) {
+            modelId = '';
+            utils.log('"model-key" is a test feature, do not use');
+            result = window[element.getAttribute('model-key')];
         }
 
         return Promise.resolve(result).then(function(model) {
@@ -12256,7 +12260,7 @@ function requestSpace(scope, option) {
     return Flipper.dataCenter.requestSpace(data);
 }
 
-function renderView(viewContent, data, options) {
+function renderView(viewContent, data, options, component) {
     var viewId = options.viewId,
         element = options.element,
         compiledView = compileView(viewId, viewContent);
@@ -12271,9 +12275,20 @@ function renderView(viewContent, data, options) {
         return element.modelId || '';
     };
 
-    commands.requestSpace = requestSpace;
+    commands.model = commands.requestSpace = requestSpace;
 
     options.commands = commands;
+
+    compiledView.config.loader = {
+        tplCache: {},
+        load: function(tpl, callback) {
+            var tplName = tpl.name;
+            if (!this.tplCache[tplName]) {
+                this.tplCache[tplName] = tpl.root.compile(component.getView(tplName));
+            }
+            callback(null, this.tplCache[tpl.name]);
+        }
+    };
 
     return compiledView.render(data, options);
 }

@@ -16,7 +16,7 @@ function requestSpace(scope, option) {
     return Flipper.dataCenter.requestSpace(data);
 }
 
-function renderView(viewContent, data, options) {
+function renderView(viewContent, data, options, component) {
     var viewId = options.viewId,
         element = options.element,
         compiledView = compileView(viewId, viewContent);
@@ -31,9 +31,20 @@ function renderView(viewContent, data, options) {
         return element.modelId || '';
     };
 
-    commands.requestSpace = requestSpace;
+    commands.model = commands.requestSpace = requestSpace;
 
     options.commands = commands;
+
+    compiledView.config.loader = {
+        tplCache: {},
+        load: function(tpl, callback) {
+            var tplName = tpl.name;
+            if (!this.tplCache[tplName]) {
+                this.tplCache[tplName] = tpl.root.compile(component.getView(tplName));
+            }
+            callback(null, this.tplCache[tpl.name]);
+        }
+    };
 
     return compiledView.render(data, options);
 }

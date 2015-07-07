@@ -778,7 +778,7 @@ function registerTemplateEngine(name, engine) {
 
             views[viewId] = viewContent;
         },
-        renderView: function(viewId, model, options) {
+        renderView: function(viewId, model, options, component) {
             throwIfViewIdError(viewId);
             var view = views[viewId];
 
@@ -788,7 +788,7 @@ function registerTemplateEngine(name, engine) {
             }
 
             options.viewId = viewId;
-            return engine.render(view, model, options);
+            return engine.render(view, model, options, component);
         }
     };
 }
@@ -1434,7 +1434,7 @@ Component.prototype = {
             }
         }
 
-        return templateEngine.renderView(viewId, data, options);
+        return templateEngine.renderView(viewId, data, options, this);
     },
 
     /* created / attached cycle methods */
@@ -1479,6 +1479,10 @@ Component.prototype = {
         } else if (element.hasAttribute('model-id')) {
             modelId = element.getAttribute('model-id');
             result = Flipper.dataCenter.getSpace(modelId);
+        } else if (element.hasAttribute('model-key')) {
+            modelId = '';
+            utils.log('"model-key" is a test feature, do not use');
+            result = window[element.getAttribute('model-key')];
         }
 
         return Promise.resolve(result).then(function(model) {

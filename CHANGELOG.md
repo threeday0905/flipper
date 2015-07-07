@@ -5,6 +5,10 @@
         - if returning undefined, then do-nothing, just jump into next step.
     - if no render() method, then go the default render way.
 
+- support xtemplate self include
+- test feature, use mode-key="xxx" attribute to get model from parent model. (STILL IN TESTING)
+
+
 ## v0.6.1
 - bugfix. no longer to  inject un-cessary fields into element prototype. (style is a necessary prop)
 

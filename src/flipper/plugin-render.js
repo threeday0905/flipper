@@ -40,7 +40,7 @@ function registerTemplateEngine(name, engine) {
 
             views[viewId] = viewContent;
         },
-        renderView: function(viewId, model, options) {
+        renderView: function(viewId, model, options, component) {
             throwIfViewIdError(viewId);
             var view = views[viewId];
 
@@ -50,7 +50,7 @@ function registerTemplateEngine(name, engine) {
             }
 
             options.viewId = viewId;
-            return engine.render(view, model, options);
+            return engine.render(view, model, options, component);
         }
     };
 }
