@@ -596,8 +596,8 @@ Component.prototype = {
         }
 
         return Promise.resolve(result).then(function() {
-            element.status = 'error';
-            element.reason = err;
+            element._status = 'error';
+            element._reason = err;
             triggerExternalLifeEvent(element, 'error');
         });
     },
@@ -610,7 +610,7 @@ Component.prototype = {
 
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
-            element.status = 'success';
+            element._status = 'success';
             element.removeAttribute('unresolved');
             triggerExternalLifeEvent(element, 'success');
         });

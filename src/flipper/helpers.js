@@ -22,16 +22,16 @@ function attachWhenEvent(method, nodes, callback) {
         }
 
         if (node.initialized) {
-            if (method === 'success' && node.status !== 'success') {
+            if (method === 'success' && node._status !== 'success') {
                 return;
             }
 
-            if (method === 'error' && node.status !== 'error') {
+            if (method === 'error' && node._status !== 'error') {
                 return;
             }
 
             /* dispatch the error */
-            callback.call(node, node.reason || undefined);
+            callback.call(node, node._reason || undefined);
         } else {
             if (!node.__flipper_when__) {
                 node.__flipper_when__ = {};
@@ -64,4 +64,33 @@ Flipper.whenReady = function(doms, callback) {
     attachWhenEvent('ready', doms, callback);
 };
 
+Flipper.waitReady = function(nodes, callback) {
+    if (nodes === undefined || nodes === null) {
+        return;
+    }
 
+    if (typeof nodes === 'string' || !nodes.length) {
+        nodes = [ nodes ];
+    }
+
+    return new Promise(function(resolve, reject) {
+        var waitingCount = nodes.length;
+
+        function done() {
+            if (typeof callback === 'function') {
+                callback();
+            }
+            resolve();
+        }
+
+        function resolveOne() {
+            waitingCount -= 1;
+            if (waitingCount === 0) {
+                done();
+            }
+        }
+
+        Flipper.whenSuccess(nodes, resolveOne);
+        Flipper.whenError(nodes, reject);
+    });
+};
