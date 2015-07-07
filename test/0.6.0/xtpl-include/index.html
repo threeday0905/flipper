@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+
+    <script src="../../../build/flipper-xtpl-debug.js"></script>
+</head>
+
+<body>
+    <web-component name="tpl-include" template-engine="xtpl" noscript>
+        <style>
+            tpl-include {
+                display: block;
+            }
+        </style>
+
+        <template id="index">
+            <h1>this is title</h1>
+            {{include ("number2")}}
+        </template>
+
+        <template id="number2">
+            <h2>this is number2</h2>
+            {{include ("number3")}}
+        </template>
+
+        <template id="number3">
+            <h3>this is number 3</h3>
+        </template>
+
+    </web-component>
+
+    <tpl-include></tpl-include>
+
+</body>
+
+</html>
