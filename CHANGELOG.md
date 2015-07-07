@@ -7,7 +7,8 @@
 
 - support xtemplate self include
 - test feature, use mode-key="xxx" attribute to get model from parent model. (STILL IN TESTING)
-
+- add waitReady() event
+- add rendered callback
 
 ## v0.6.1
 - bugfix. no longer to  inject un-cessary fields into element prototype. (style is a necessary prop)

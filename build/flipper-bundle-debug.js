@@ -3805,6 +3805,10 @@ Component.prototype = {
             result = window[element.getAttribute('model-key')];
         }
 
+        if (!modelId && element.hasAttribute('model-id')) {
+            Flipper.unlinkSpace(element.getAttribute('model-id'));
+        }
+
         return Promise.resolve(result).then(function(model) {
             if (model !== undefined) {
                 element.model = model;
@@ -3912,6 +3916,8 @@ Component.prototype = {
         if (!Flipper.useNative) {
             Flipper.parse(element);
         }
+
+        triggerExternalLifeEvent(element, 'rendered');
 
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
