@@ -3814,6 +3814,21 @@ Component.prototype = {
     fetchModel: function(element, model) {
         var result, modelId;
 
+        if (element.hasAttribute('model-key')) {
+            utils.log('"model-key" is a test feature, do not use');
+            modelId = Flipper.dataCenter.requestSpace(
+                window[element.getAttribute('model-key')]
+            );
+
+            if (element.hasAttribute('model-id')) {
+                Flipper.dataCenter.unlinkSpace(element.getAttribute('model-id'));
+                element.removeAttribute('model-id');
+            }
+
+            element.setAttribute('model-id', modelId);
+            element.removeAttribute('model-key');
+        }
+
         if (model) {
             modelId = '';
             result = model;
@@ -3823,10 +3838,6 @@ Component.prototype = {
         } else if (element.hasAttribute('model-id')) {
             modelId = element.getAttribute('model-id');
             result = Flipper.dataCenter.getSpace(modelId);
-        } else if (element.hasAttribute('model-key')) {
-            modelId = '';
-            utils.log('"model-key" is a test feature, do not use');
-            result = window[element.getAttribute('model-key')];
         }
 
         if (!modelId && element.hasAttribute('model-id')) {
