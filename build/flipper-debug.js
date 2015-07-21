@@ -2284,7 +2284,7 @@ function attachWhenEvent(method, nodes, callback) {
                 node.__flipper_when__[method] = [];
             }
 
-            node.__flipper_when__[method].push(execCallback.bind(node));
+            node.__flipper_when__[method].push(execCallback);
         }
     }
 
