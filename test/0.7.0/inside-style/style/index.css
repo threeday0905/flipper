@@ -1,0 +1,5 @@
+@import "./import.css";
+
+x-test .pink {
+    color: pink;
+}

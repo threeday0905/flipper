@@ -1,0 +1,33 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Flipper - Test Runner</title>
+
+    <script src="../../../build/flipper-debug.js"></script>
+    <link rel="import" href="./components/x-colorful.html">
+    <link rel="import" href="./components/x-red.html">
+</head>
+
+<body>
+    <web-component name="x-purple" noscript>
+        <style>
+            x-purple {
+                display: block;
+            }
+            x-purple h1 {
+                color: purple;
+            }
+        </style>
+
+        <template>
+            <h1>Should be PURPLE</h1>
+        </template>
+    </web-component>
+
+    <x-red></x-red>
+    <x-purple></x-purple>
+    <x-colorful></x-colorful>
+</body>
+
+</html>
