@@ -2245,11 +2245,11 @@ function attachWhenEvent(method, nodes, callback) {
             execCallback(node);
 
         /* if the component is not registered, then wait it */
-        } else if (!isFlipperElement(node.tagName)) {
+        } else if (!isFlipperElement(node)) {
 
             /* wait 1000ms to load the component */
             setTimeout(function() {
-                if (isFlipperElement(node.tagName)) {
+                if (isFlipperElement(node)) {
                     handler(node);
                 } else {
                     /* if still not loaded, then exec callback */
