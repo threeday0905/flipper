@@ -2233,16 +2233,12 @@ function attachWhenEvent(method, nodes, callback) {
         return;
     }
 
-    function execCallback(node) {
-        callback.call(node, node.__error__ || undefined);
-    }
-
     function handler(node) {
         utils.debug(node, 'has flag on bind', node.__flipper__);
 
         /* if it is not custom element, then call Callback directly */
         if (!isCustomElement(node) ) {
-            execCallback(node);
+            callback.call(node);
 
         /* if the component is not registered, then wait it */
         } else if (!isFlipperElement(node)) {
@@ -2253,7 +2249,7 @@ function attachWhenEvent(method, nodes, callback) {
                     handler(node);
                 } else {
                     /* if still not loaded, then exec callback */
-                    execCallback(node);
+                    callback.call(node);
                 }
             }, 1000);
 
@@ -2270,7 +2266,7 @@ function attachWhenEvent(method, nodes, callback) {
                 return;
             }
 
-            execCallback(node);
+            callback.call(node);
 
         /* if the node is a flipper-component, and during rendering */
         } else {
@@ -2284,7 +2280,7 @@ function attachWhenEvent(method, nodes, callback) {
                 node.__flipper_when__[method] = [];
             }
 
-            node.__flipper_when__[method].push(execCallback);
+            node.__flipper_when__[method].push(callback);
         }
     }
 
