@@ -1480,6 +1480,11 @@ Component.prototype = {
         utils.debug(element, 'render begin');
         element.setAttribute('unresolved', '');
         element.__flipper__ = true;
+
+        if (element.resolved) {
+            element.resolved = false;
+        }
+
         utils.debug(element, 'has flipper flag', element.__flipper__);
     },
     initElement: function(element) {
@@ -1623,8 +1628,8 @@ Component.prototype = {
         }
 
         return Promise.resolve(result).then(function() {
-            element._status = 'error';
-            element._reason = err;
+            element.__status__ = 'error';
+            element.__error__ = err;
             triggerExternalLifeEvent(element, 'error');
         });
     },
@@ -1643,14 +1648,14 @@ Component.prototype = {
 
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
-            element._status = 'success';
+            element.__status__ = 'success';
             element.removeAttribute('unresolved');
             triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
         utils.debug(element, 'render complete');
-        element.initialized = true;
+        element.resolved = true;
 
         triggerExternalLifeEvent(element, 'ready');
 
@@ -2206,6 +2211,15 @@ Flipper.findShadow = function(target, selector) {
     return utils.query.all(target.shadowRoot, selector);
 };
 
+
+function isCustomElement(node) {
+    return utils.isElement(node) && utils.isCustomTag(node.tagName);
+}
+
+function isFlipperElement(node) {
+    return Flipper.hasComponent(node.tagName);
+}
+
 function attachWhenEvent(method, nodes, callback) {
     if (nodes === undefined || nodes === null) {
         return;
@@ -2219,35 +2233,58 @@ function attachWhenEvent(method, nodes, callback) {
         return;
     }
 
+    function execCallback(node) {
+        callback.call(node, node.__error__ || undefined);
+    }
+
     function handler(node) {
         utils.debug(node, 'has flag on bind', node.__flipper__);
-        if (!node) {
-            return;
-        }
 
-        if (node.initialized) {
-            if (method === 'success' && node._status !== 'success') {
+        /* if it is not custom element, then call Callback directly */
+        if (!isCustomElement(node) ) {
+            execCallback(node);
+
+        /* if the component is not registered, then wait it */
+        } else if (!isFlipperElement(node.tagName)) {
+
+            /* wait 1000ms to load the component */
+            setTimeout(function() {
+                if (isFlipperElement(node.tagName)) {
+                    handler(node);
+                } else {
+                    /* if still not loaded, then exec callback */
+                    execCallback(node);
+                }
+            }, 1000);
+
+        /* if the node is a flipper-component, and it is resolved */
+        } else if (node.resolved) {
+
+            /* skip success callback, if status is not success */
+            if (method === 'success' && node.__status__ !== 'success') {
                 return;
             }
 
-            if (method === 'error' && node._status !== 'error') {
+            /* skip error callback, if status is not error */
+            if (method === 'error' && node.__status__ !== 'error') {
                 return;
             }
 
-            /* dispatch the error */
-            callback.call(node, node._reason || undefined);
+            execCallback(node);
+
+        /* if the node is a flipper-component, and during rendering */
         } else {
+
+            /* add callback events on itsself, it will be exec once rendered */
             if (!node.__flipper_when__) {
                 node.__flipper_when__ = {};
             }
 
-            var flipperEvents = node.__flipper_when__;
-
-            if (!flipperEvents[method]) {
-                flipperEvents[method] = [];
+            if (!node.__flipper_when__[method]) {
+                node.__flipper_when__[method] = [];
             }
 
-            flipperEvents[method].push(callback);
+            node.__flipper_when__[method].push(execCallback.bind(node));
         }
     }
 
