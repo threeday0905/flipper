@@ -472,6 +472,11 @@ Component.prototype = {
         utils.debug(element, 'render begin');
         element.setAttribute('unresolved', '');
         element.__flipper__ = true;
+
+        if (element.resolved) {
+            element.resolved = false;
+        }
+
         utils.debug(element, 'has flipper flag', element.__flipper__);
     },
     initElement: function(element) {
@@ -615,8 +620,8 @@ Component.prototype = {
         }
 
         return Promise.resolve(result).then(function() {
-            element._status = 'error';
-            element._reason = err;
+            element.__status__ = 'error';
+            element.__error__ = err;
             triggerExternalLifeEvent(element, 'error');
         });
     },
@@ -635,14 +640,14 @@ Component.prototype = {
 
         var result = tryCallLifeCycleEvent(element, 'ready');
         return Promise.resolve(result).then(function() {
-            element._status = 'success';
+            element.__status__ = 'success';
             element.removeAttribute('unresolved');
             triggerExternalLifeEvent(element, 'success');
         });
     },
     renderComplete: function(element) {
         utils.debug(element, 'render complete');
-        element.initialized = true;
+        element.resolved = true;
 
         triggerExternalLifeEvent(element, 'ready');
 

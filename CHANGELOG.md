@@ -1,4 +1,7 @@
 ## v0.7.1
+- enhance waitReady() related methods to handle with non-custom-element & non-flipper-element
+
+## v0.7.0
 - support customize render method
     - if has render() method
         - if returning html, then use it to make dom tree
