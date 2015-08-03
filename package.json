@@ -1,6 +1,6 @@
 {
   "name": "@ali/flipper",
-  "version": "0.6.0",
+  "version": "0.7.1",
   "description": "another web-component solutions",
   "main": "toolkit/builder",
   "scripts": {
@@ -12,33 +12,30 @@
   "author": "Herman Lee <threeday0905@gmail.com>",
   "license": "MIT",
   "dependencies": {
-    "args-expect": "0.2.1",
-    "cheerio": "~0.19.0",
-    "escodegen": "~1.6.1",
-    "esprima": "~2.2.0"
+    "bootstrap": "3.3.4",
+    "es5-shim": "4.1.1",
+    "html5shiv": "3.7.3",
+    "jquery": "1.11.3",
+    "modulex": "1.7.10",
+    "promise-polyfill": "2.0.2",
+    "webcomponents.js": "0.6.1",
+    "xtemplate": "4.2.4"
   },
   "publishConfig": {
     "registry": "http://registry.npm.alibaba-inc.com"
   },
   "devDependencies": {
-    "bootstrap": "3.3.4",
-    "es5-shim": "4.1.1",
-    "fd-gulp-chinese2unicode": "0.0.1",
+    "args-expect": "0.2.1",
+    "cheerio": "~0.19.0",
+    "del": "~1.2.0",
+    "escodegen": "~1.6.1",
+    "esprima": "~2.5.0",
     "gulp": "~3.9.0",
-    "gulp-clean": "~0.3.1",
-    "gulp-concat": "~2.5.2",
+    "gulp-concat": "~2.6.0",
     "gulp-rename": "~1.2.0",
-    "gulp-uglify": "~1.0.2",
-    "html5shiv": "3.7.2",
-    "istanbul": "~0.3.15",
-    "jquery": "1.11.3",
-    "mocha": "~2.2.5",
-    "modulex": "1.7.10",
+    "gulp-uglify": "~1.2.0",
     "perrier": "~0.3.3",
-    "promise-polyfill": "2.0.2",
-    "run-sequence": "~1.0.2",
-    "through2": "~0.6.3",
-    "webcomponents.js": "0.6.1",
-    "xtemplate": "4.2.4"
+    "run-sequence": "~1.1.2",
+    "through2": "~2.0.0"
   }
 }
