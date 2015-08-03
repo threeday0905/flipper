@@ -34,7 +34,7 @@
   "_id": "webcomponents.js@0.6.1",
   "scripts": {},
   "_shasum": "28e0bdf228620eb08e8674dcec258bdad9a64220",
-  "_from": "webcomponents.js@latest",
+  "_from": "webcomponents.js@0.6.1",
   "_npmVersion": "2.8.3",
   "_nodeVersion": "1.8.1",
   "_npmUser": {
@@ -53,7 +53,13 @@
   ],
   "dist": {
     "shasum": "28e0bdf228620eb08e8674dcec258bdad9a64220",
-    "tarball": "http://registry.npmjs.org/webcomponents.js/-/webcomponents.js-0.6.1.tgz"
+    "size": 179747,
+    "noattachment": false,
+    "key": "webcomponents.js/-/webcomponents.js-0.6.1.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/webcomponents.js/download/webcomponents.js-0.6.1.tgz"
   },
-  "_resolved": "http://registry.npmjs.org/webcomponents.js/-/webcomponents.js-0.6.1.tgz"
+  "publish_time": 1429738777727,
+  "_cnpm_publish_time": 1429738777727,
+  "_resolved": "http://registry.npm.alibaba-inc.com/webcomponents.js/download/webcomponents.js-0.6.1.tgz",
+  "readme": "ERROR: No README data found!"
 }

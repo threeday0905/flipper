@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://taylorhakes@github.com/taylorhakes/promise-polyfill.git"
+    "url": "git+https://taylorhakes@github.com/taylorhakes/promise-polyfill.git"
   },
   "author": {
     "name": "Taylor Hakes"
@@ -38,7 +38,7 @@
     "key": "promise-polyfill/-/promise-polyfill-2.0.2.tgz",
     "tarball": "http://registry.npm.alibaba-inc.com/promise-polyfill/download/promise-polyfill-2.0.2.tgz"
   },
-  "_from": "promise-polyfill@*",
+  "_from": "promise-polyfill@2.0.2",
   "_npmVersion": "1.4.3",
   "_npmUser": {
     "name": "taylorhakes",
@@ -54,5 +54,6 @@
   "publish_time": 1427854054212,
   "_cnpm_publish_time": 1427854054212,
   "_shasum": "3908dda91f5d130bfb3d09b3e1f77c37c4cb2669",
-  "_resolved": "http://registry.npm.alibaba-inc.com/promise-polyfill/download/promise-polyfill-2.0.2.tgz"
+  "_resolved": "http://registry.npm.alibaba-inc.com/promise-polyfill/download/promise-polyfill-2.0.2.tgz",
+  "readme": "ERROR: No README data found!"
 }

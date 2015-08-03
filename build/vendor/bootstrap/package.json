@@ -23,7 +23,7 @@
   "main": "./dist/js/npm",
   "repository": {
     "type": "git",
-    "url": "https://github.com/twbs/bootstrap.git"
+    "url": "git+https://github.com/twbs/bootstrap.git"
   },
   "bugs": {
     "url": "https://github.com/twbs/bootstrap/issues"
@@ -95,7 +95,7 @@
   "gitHead": "f5250d0a0e2a7cfed77f55654027ff151ebe5aeb",
   "_id": "bootstrap@3.3.4",
   "_shasum": "02378b4a6b6ce7a55e3add1edae41ad79f74646a",
-  "_from": "bootstrap@*",
+  "_from": "bootstrap@3.3.4",
   "_npmVersion": "2.5.1",
   "_nodeVersion": "0.12.0",
   "_npmUser": {
@@ -118,5 +118,6 @@
   "directories": {},
   "publish_time": 1426521072695,
   "_cnpm_publish_time": 1426521072695,
-  "_resolved": "http://registry.npm.alibaba-inc.com/bootstrap/download/bootstrap-3.3.4.tgz"
+  "_resolved": "http://registry.npm.alibaba-inc.com/bootstrap/download/bootstrap-3.3.4.tgz",
+  "readme": "ERROR: No README data found!"
 }

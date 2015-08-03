@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/jquery/jquery.git"
+    "url": "git+https://github.com/jquery/jquery.git"
   },
   "keywords": [
     "jquery",
@@ -67,12 +67,12 @@
       "email": "dave.methvin@gmail.com"
     },
     {
-      "name": "scott.gonzalez",
-      "email": "scott.gonzalez@gmail.com"
-    },
-    {
       "name": "m_gol",
       "email": "m.goleb@gmail.com"
+    },
+    {
+      "name": "scott.gonzalez",
+      "email": "scott.gonzalez@gmail.com"
     },
     {
       "name": "timmywil",
@@ -81,8 +81,14 @@
   ],
   "dist": {
     "shasum": "dd8b74278b27102d29df63eae28308a8cfa1b583",
-    "tarball": "http://registry.npmjs.org/jquery/-/jquery-1.11.3.tgz"
+    "size": 398530,
+    "noattachment": false,
+    "key": "jquery/-/jquery-1.11.3.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/jquery/download/jquery-1.11.3.tgz"
   },
   "directories": {},
-  "_resolved": "http://registry.npmjs.org/jquery/-/jquery-1.11.3.tgz"
+  "publish_time": 1430238126378,
+  "_cnpm_publish_time": 1430238126378,
+  "_resolved": "http://registry.npm.alibaba-inc.com/jquery/download/jquery-1.11.3.tgz",
+  "readme": "ERROR: No README data found!"
 }

@@ -41,7 +41,7 @@
   "homepage": "https://github.com/threeday0905/args-expect",
   "_id": "args-expect@0.2.1",
   "_shasum": "08309e0bd9fab1adfa24012de598b03b4e01da36",
-  "_from": "args-expect@*",
+  "_from": "args-expect@0.2.1",
   "_npmVersion": "1.4.21",
   "_npmUser": {
     "name": "threeday0905",
@@ -63,5 +63,6 @@
   "directories": {},
   "publish_time": 1408516950089,
   "_cnpm_publish_time": 1408516950089,
-  "_resolved": "http://registry.npm.alibaba-inc.com/args-expect/download/args-expect-0.2.1.tgz"
+  "_resolved": "http://registry.npm.alibaba-inc.com/args-expect/download/args-expect-0.2.1.tgz",
+  "readme": "ERROR: No README data found!"
 }

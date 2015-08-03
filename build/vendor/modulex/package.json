@@ -58,7 +58,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "http://github.com/modulex/modulex.git"
+    "url": "git+ssh://git@github.com/modulex/modulex.git"
   },
   "gitHead": "43c48ea27ba518716e97d0c7446d880a3d8d6756",
   "description": "---",
@@ -68,7 +68,7 @@
   "homepage": "https://github.com/modulex/modulex",
   "_id": "modulex@1.7.10",
   "_shasum": "75452cd1230121afda9ab31dc0a2bad36e1b299b",
-  "_from": "modulex@*",
+  "_from": "modulex@1.7.10",
   "_npmVersion": "2.5.1",
   "_nodeVersion": "0.12.0",
   "_npmUser": {
@@ -91,5 +91,6 @@
   "directories": {},
   "publish_time": 1426654288848,
   "_cnpm_publish_time": 1426654288848,
-  "_resolved": "http://registry.npm.alibaba-inc.com/modulex/download/modulex-1.7.10.tgz"
+  "_resolved": "http://registry.npm.alibaba-inc.com/modulex/download/modulex-1.7.10.tgz",
+  "readme": "ERROR: No README data found!"
 }

@@ -47,7 +47,7 @@
   "main": "es5-shim.js",
   "repository": {
     "type": "git",
-    "url": "http://github.com/es-shims/es5-shim.git"
+    "url": "git+ssh://git@github.com/es-shims/es5-shim.git"
   },
   "scripts": {
     "minify": "npm run minify-shim && npm run minify-sham",
@@ -98,7 +98,7 @@
   "gitHead": "9865d4ce5ee2564e4590b26a1aeca7b56382ff4b",
   "_id": "es5-shim@4.1.1",
   "_shasum": "a791c906f9a0da56ac3709d119fba3c5112019d6",
-  "_from": "es5-shim@*",
+  "_from": "es5-shim@4.1.1",
   "_npmVersion": "2.7.5",
   "_nodeVersion": "1.6.4",
   "_npmUser": {
@@ -107,12 +107,12 @@
   },
   "maintainers": [
     {
-      "name": "kriskowal",
-      "email": "kris.kowal@cixar.com"
-    },
-    {
       "name": "gozala",
       "email": "rfobic@gmail.com"
+    },
+    {
+      "name": "kriskowal",
+      "email": "kris.kowal@cixar.com"
     },
     {
       "name": "ljharb",
@@ -121,8 +121,14 @@
   ],
   "dist": {
     "shasum": "a791c906f9a0da56ac3709d119fba3c5112019d6",
-    "tarball": "http://registry.npmjs.org/es5-shim/-/es5-shim-4.1.1.tgz"
+    "size": 84111,
+    "noattachment": false,
+    "key": "es5-shim/-/es5-shim-4.1.1.tgz",
+    "tarball": "http://registry.npm.alibaba-inc.com/es5-shim/download/es5-shim-4.1.1.tgz"
   },
   "directories": {},
-  "_resolved": "http://registry.npmjs.org/es5-shim/-/es5-shim-4.1.1.tgz"
+  "publish_time": 1428783050295,
+  "_cnpm_publish_time": 1428783050295,
+  "_resolved": "http://registry.npm.alibaba-inc.com/es5-shim/download/es5-shim-4.1.1.tgz",
+  "readme": "ERROR: No README data found!"
 }
