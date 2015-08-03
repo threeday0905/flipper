@@ -7,7 +7,7 @@ var cheerio = require('cheerio'),
 
 var registerScript = require('./register-script');
 
-var SUPPORTED_TAG_ATTRIBUTES = [ 'template-engine', 'injection-mode', 'extends', 'is' ];
+var SUPPORTED_TAG_ATTRIBUTES = ['template-engine', 'injection-mode', 'extends', 'is'];
 
 function parseDash(str) {
     if (str.charAt(0) === '-') {
@@ -69,7 +69,9 @@ exports.parse = function($ele, filePath, options) {
     var debugPrefix = '[web-component] ' + component.name;
 
     $ele.children().each(function() {
-        var $sub = cheerio(this),
+        var $sub = cheerio(this, undefined, undefined, {
+                decodeEntities: false
+            }),
             tagName = $sub[0].tagName || $sub[0].name,
             content = $sub.html();
 

@@ -1,6 +1,11 @@
 ## v0.7.1
 - enhance waitReady() related methods to handle with non-custom-element & non-flipper-element
 
+- builder bugfix
+    - exports correct package name on windows env
+    - specific "decodeEntities: false" on cheerio to aviod tmpleate escape
+    - handle the component has no script
+
 ## v0.7.0
 - support customize render method
     - if has render() method

@@ -3,9 +3,11 @@
 var esprima = require('esprima'),
     escodegen = require('escodegen');
 
-var fs = require('fs'),
-    path = require('path');
+var path = require('path');
 
+function covertToUnixPath(pathName) {
+    return pathName.replace(/\\/g, '/');
+}
 
 function checkIsFlipperExpression(syntax) {
     if (syntax.type === 'ExpressionStatement' &&
@@ -20,18 +22,20 @@ function checkIsFlipperExpression(syntax) {
 function findFlipperRecursive(syntax) {
     var key, prop, result;
     for (key in syntax) {
-        prop = syntax[key];
+        if (syntax.hasOwnProperty(key)) {
+            prop = syntax[key];
 
-        if (prop && typeof prop === 'object') {
-            if (checkIsFlipperExpression(prop)) {
-                result = prop;
-            } else {
-                result = findFlipperRecursive(prop);
+            if (prop && typeof prop === 'object') {
+                if (checkIsFlipperExpression(prop)) {
+                    result = prop;
+                } else {
+                    result = findFlipperRecursive(prop);
+                }
             }
-        }
 
-        if (result) {
-            break;
+            if (result) {
+                break;
+            }
         }
     }
     return result;
@@ -39,7 +43,7 @@ function findFlipperRecursive(syntax) {
 
 function findFlipperSyntax(fullSyntax) {
     var result;
-    if (checkIsFlipperExpression(fullSyntax.body[0]) ) {
+    if (checkIsFlipperExpression(fullSyntax.body[0])) {
         result = fullSyntax.body[0];
     } else {
         result = findFlipperRecursive(fullSyntax.body[0]);
@@ -154,12 +158,12 @@ function injectComponentTpl(component, syntax) {
             type: 'Property',
             key: {
                 type: 'Identifier',
-               name: 'template'
+                name: 'template'
             },
-            computed: false,
-            value: tplDeinition,
-            kind: 'init',
-            method: false,
+            computed:  false,
+            value:     tplDeinition,
+            kind:      'init',
+            method:    false,
             shorthand: false
         };
     }
@@ -182,7 +186,7 @@ function injectComponentTpl(component, syntax) {
                 );
             /* if component.template is not string or object, thorw error */
             } else if (tplDeinition.type !== 'ObjectExpression') {
-               throw new Error('Flipper template must be an object');
+                throw new Error('Flipper template must be an object');
             }
         } else {
             /* if no exists template prop, then create new */
@@ -234,19 +238,21 @@ function handleComponentName(component, syntax) {
     try {
         var registerArgs = findRegisterArgs(syntax);
 
-        if (registerArgs[0].type === 'Literal') {
-            if (!component.name) {
-                component.name = registerArgs[0].value;
-            } else {
-                throw new Error('component not match! excpet: ' + component.name +
-                    ', but now: ' + registerArgs[0].value);
-            }
-        } else if (registerArgs.length === 0 || registerArgs[0].type !== 'Literal') {
+        if (registerArgs.length === 0 || registerArgs[0].type !== 'Literal') {
             registerArgs.unshift({
                 type:  'Literal',
                 value: component.name,
                 raw:   component.name
             });
+        }
+
+        if (registerArgs[0].type === 'Literal') {
+            if (!component.name) {
+                component.name = registerArgs[0].value;
+            } else if (component.name !== registerArgs[0].value) {
+                throw new Error('component not match! excpet: ' + component.name +
+                    ', but now: ' + registerArgs[0].value);
+            }
         }
 
         if (!component.name) {
@@ -282,9 +288,12 @@ function injectPackageName(component, syntax, options) {
 
         if (modules) {
             modules.forEach(function(moduleName) {
+                var packageName;
                 if (moduleName.type === 'Literal') {
                     if (moduleName.value.charAt(0) === '.') {
-                        moduleName.value = moduleName.raw = joinPackage(moduleName.value);
+                        packageName = joinPackage(moduleName.value);
+                        packageName = covertToUnixPath(packageName);
+                        moduleName.value = moduleName.raw = packageName;
                     }
                 }
             });
@@ -312,7 +321,7 @@ function parseComponent(component, fullSyntax, options) {
 }
 
 
-exports.parse = function (component, options) {
+exports.parse = function(component, options) {
     if (!component.register) {
         component.register = 'Flipper.register()';
     }

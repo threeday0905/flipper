@@ -14,11 +14,11 @@ exports.parse = function($ele, filePath, options) {
     };
 
     function handleExternalScript($ele) {
-        resources.externalScript.push( loader.load($ele.attr('src'), filePath) );
+        resources.externalScript.push(loader.load($ele.attr('src'), filePath));
     }
 
     function handleExtrernaStyle($ele) {
-        resources.externalScript.push( loader.load($ele.attr('href'), filePath) );
+        resources.externalScript.push(loader.load($ele.attr('href'), filePath));
     }
 
     function handleInlineScript($ele) {
