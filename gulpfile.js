@@ -1,10 +1,10 @@
 'use strict';
 
-var gulp     = require('gulp'),
+var del      = require('del'),
+    gulp     = require('gulp'),
     rename   = require('gulp-rename'),
     concat   = require('gulp-concat'),
     uglify   = require('gulp-uglify'),
-    clean    = require('gulp-clean'),
     sequence = require('run-sequence');
 
 var buildHelper = require('./src/build-helper'),
@@ -17,8 +17,8 @@ var srcFolder  = resolve(__dirname, './src'),
 
 /* sync vendor modules */
 var syncVendors = function(done) {
-    var vendorConfig = perrier.load( resolve(srcFolder, 'vendor.json') ),
-        waiting = buildHelper.waitingMultiTasks(vendorConfig, done );
+    var vendorConfig = perrier.load(resolve(srcFolder, 'vendor.json')),
+        waiting = buildHelper.waitingMultiTasks(vendorConfig, done);
 
     Object.keys(vendorConfig).forEach(function(vendorName) {
         var config = buildHelper.parseConfig(vendorConfig[vendorName], srcFolder),
@@ -26,8 +26,8 @@ var syncVendors = function(done) {
 
         buildHelper.checkConfig(config);
 
-        gulp.src(config.src, { base: config.base })
-            .pipe(gulp.dest( targetFolder ))
+        gulp.src(config.src, {base: config.base})
+            .pipe(gulp.dest(targetFolder))
             .on('end', function() {
                 gulp.src(buildHelper.getPackageFile(config.base))
                     .pipe(gulp.dest(targetFolder))
@@ -39,7 +39,7 @@ var syncVendors = function(done) {
 
 /* build related tasks */
 var buildTasks = (function() {
-    var buildConfig = perrier.load( resolve(srcFolder, 'build.json') );
+    var buildConfig = perrier.load(resolve(srcFolder, 'build.json'));
 
     return Object.keys(buildConfig).map(function(taskName) {
         var config = buildHelper.parseConfig(buildConfig[taskName], srcFolder);
@@ -71,9 +71,9 @@ buildTasks.forEach(function(task, idx) {
             }))
             .pipe(gulp.dest(distFolder))
             .pipe(uglify())
-            .pipe(rename(function(path){
+            .pipe(rename(function(path) {
                 path.basename = /* remove "-debug" */
-                    path.basename.substr(0, path.basename.length -6);
+                    path.basename.substr(0, path.basename.length - 6);
             }))
             .pipe(gulp.dest(distFolder));
     }
@@ -81,8 +81,8 @@ buildTasks.forEach(function(task, idx) {
     gulp.task(task.build, depTasks, build);
     gulp.task(task.alone, build);
 
-    gulp.task(task.watch, [ task.build ], function() {
-        return gulp.watch(task.src, [ task.alone ]);
+    gulp.task(task.watch, [task.build], function() {
+        return gulp.watch(task.src, [task.alone]);
     });
 
     buildTasks.buildQueue.push(task.build);
@@ -91,10 +91,10 @@ buildTasks.forEach(function(task, idx) {
 
 gulp.task('sync-vendor', syncVendors);
 gulp.task('build', buildTasks.buildQueue);
-gulp.task('default', [ 'build' ].concat(buildTasks.watchQueue));
+gulp.task('default', ['build'].concat(buildTasks.watchQueue));
 
-gulp.task('clean-build', function() {
-    return gulp.src(distFolder, { read: false }).pipe(clean());
+gulp.task('clean-build', function(done) {
+    del(distFolder, done);
 });
 
 gulp.task('build-all', function(done) {
