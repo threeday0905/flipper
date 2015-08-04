@@ -77,7 +77,19 @@ utils.log = function log(msg) {
 };
 
 utils.error = function(err) {
-    console.error(err.stack || err);
+    if (typeof console.error === 'function') {
+        console.error(err.stack || err);
+    } else {
+        utils.log(err.stack || err);
+    }
+};
+
+utils.warn = function(err) {
+    if (typeof console.warn) {
+        console.warn(err.stack || err);
+    } else {
+        utils.log(err.stack || err);
+    }
 };
 
 function doesGetOwnPropertyDescriptorWork(object) {

@@ -114,7 +114,7 @@ function createComponent(name) {
 /**
  * register a component
  */
-function registerComponent(componentArgs, isStandalone) {
+function registerComponent(componentArgs, isStandalone, error) {
     var name = componentArgs.name,
         elementProto = componentArgs.elementProto,
         dependencies = componentArgs.dependencies;
@@ -131,6 +131,12 @@ function registerComponent(componentArgs, isStandalone) {
     if (!elementProto) {
         component.markFailed(
             'component [' + name + '] prototype could not be inferred.');
+        return;
+    }
+
+    if (error) {
+        component.markFailed(
+          'component [' + name + '] register error: ' + error);
         return;
     }
 
@@ -258,26 +264,29 @@ function registerFromDeclarationTag(ele) {
         isStandalone = true;
     }
 
+    var elementProto, componentArgs;
+
+    elementProto = {
+        style: undefined,
+        definitionEle: ele,
+        templateEngine: ele.getAttribute('template-engine'),
+        injectionMode: ele.getAttribute('injection-mode')
+    };
+
+    componentArgs = {
+        name: ele.getAttribute('name'),
+        dependencies: undefined,
+        elementProto: elementProto
+    };
+
     Promise.all([
         /* defined on register-resouce.js */
-        collectStyleFromNode(ele, baseUri)
+        collectStyleFromNode(ele, baseUri, componentArgs.name)
     ]).then(function(style) {
-        var elementProto, componentArgs;
-
-        elementProto = {
-            definitionEle: ele,
-            style: style,
-            templateEngine: ele.getAttribute('template-engine'),
-            injectionMode: ele.getAttribute('injection-mode')
-        };
-
-        componentArgs = {
-            name: ele.getAttribute('name'),
-            dependencies: undefined,
-            elementProto: elementProto
-        };
-
+        elementProto.style = style;
         registerComponent(componentArgs, isStandalone);
+    }, function(error) {
+        registerComponent(componentArgs, isStandalone, error);
     });
 }
 
