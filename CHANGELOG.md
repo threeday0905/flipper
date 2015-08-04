@@ -1,3 +1,6 @@
+## v0.8.0
+- supports link style in component definition
+
 ## v0.7.1
 - enhance waitReady() related methods to handle with non-custom-element & non-flipper-element
 
