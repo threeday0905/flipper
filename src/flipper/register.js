@@ -50,11 +50,11 @@ function tryGetBaseUriFromCurrentScript() {
         wrapper.tagName.toLowerCase() === Flipper.configs.declarationTag) {
         baseURI = wrapper.baseURI;
 
-        /* the script is loaded as independent js file*/
+    /* the script is loaded as independent js file*/
     } else if (script.src) {
         baseURI = script.src;
 
-        /* otherwise get the base uri. */
+    /* otherwise get the base uri. */
     } else {
         baseURI = script.baseURI || script.ownerDocument.baseURI;
     }
@@ -80,7 +80,8 @@ function wakeComponentUpIfTimeout(component) {
         }
 
         component.initialize();
-        throw new Error('component ' + component.name + ' is initialized automatically' +
+        throw new Error('component [' +
+            component.name + '] is initialized automatically' +
             ', forgot [noscript] attribute? ');
     }, 10000);
 
@@ -103,9 +104,7 @@ function createComponent(name) {
             });
             waitings[name] = null;
         });
-    }
-
-    if (component.isReady()) {
+    } else if (component.isReady()) {
         throw new Error('component ' + component.name + ' is already registered');
     }
 
@@ -128,7 +127,6 @@ function registerComponent(componentArgs, isStandalone) {
     /* it will create new component or return pending component */
     var component = createComponent(name),
         definition = component.definition;
-
 
     if (!elementProto) {
         component.markFailed(
@@ -248,76 +246,39 @@ function registerFromFactoryScript(name, dependencies, elementProto) {
 /**
  * register from declaration tag, e.g <web-component name="xxx">...</web-component>
  */
-function collectStyleFromNode(node) {
-    var baseURI = tryGetBaseUriFromNode(node),
-        style = '';
-
-    // TODO: Copy Attributes, such as
-    function extractStyleSheet() {
-        var linkEles = [];
-
-        utils.eachChildNodes(node, function(ele) {
-            return ele.tagName && ele.tagName.toLowerCase() === 'link' &&
-                ele.getAttribute('rel') === 'stylesheet';
-        }, function(ele) {
-            linkEles.push(ele);
-        });
-
-        utils.each(linkEles, function(ele) {
-            var href = new URL(ele.getAttribute('href'), baseURI);
-            style += '@import "' + href + '";';
-            node.removeChild(ele);
-        });
-    }
-
-    function extractStyleElement() {
-        var styleEles = [];
-
-        utils.eachChildNodes(node, function(ele) {
-            return ele.tagName && ele.tagName.toLowerCase() === 'style';
-        }, function(ele) {
-            styleEles.push(ele);
-        });
-
-        utils.each(styleEles, function(ele) {
-            var styleContent = ele.innerHTML;
-            style += styleContent;
-            node.removeChild(ele);
-        });
-    }
-
-    extractStyleSheet();
-    extractStyleElement();
-
-    return style;
-}
 
 function registerFromDeclarationTag(ele) {
-    var elementProto, componentArgs;
-
-    elementProto = {
-        definitionEle: ele,
-        style: collectStyleFromNode(ele),
-        templateEngine: ele.getAttribute('template-engine'),
-        injectionMode: ele.getAttribute('injection-mode')
-    };
-
-    componentArgs = {
-        name: ele.getAttribute('name'),
-        dependencies: undefined,
-        elementProto: elementProto
-    };
-
-    var isStandalone = false;
-
-    if (ele.hasAttribute('noscript')) {
-        isStandalone = true;
-    }
+    var isStandalone = false,
+        baseUri = tryGetBaseUriFromNode(ele);
 
     /* if the <web-component> has noscript attr,
         then it is standalone,
         otherwise it need to wait Flipper.register() called */
-    registerComponent(componentArgs, isStandalone);
+    if (ele.hasAttribute('noscript')) {
+        isStandalone = true;
+    }
+
+    Promise.all([
+        /* defined on register-resouce.js */
+        collectStyleFromNode(ele, baseUri)
+    ]).then(function(style) {
+        var elementProto, componentArgs;
+
+        elementProto = {
+            definitionEle: ele,
+            style: style,
+            templateEngine: ele.getAttribute('template-engine'),
+            injectionMode: ele.getAttribute('injection-mode')
+        };
+
+        componentArgs = {
+            name: ele.getAttribute('name'),
+            dependencies: undefined,
+            elementProto: elementProto
+        };
+
+        registerComponent(componentArgs, isStandalone);
+    });
 }
 
 
