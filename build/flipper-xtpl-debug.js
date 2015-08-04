@@ -324,7 +324,19 @@ utils.log = function log(msg) {
 };
 
 utils.error = function(err) {
-    console.error(err.stack || err);
+    if (typeof console.error === 'function') {
+        console.error(err.stack || err);
+    } else {
+        utils.log(err.stack || err);
+    }
+};
+
+utils.warn = function(err) {
+    if (typeof console.warn) {
+        console.warn(err.stack || err);
+    } else {
+        utils.log(err.stack || err);
+    }
 };
 
 function doesGetOwnPropertyDescriptorWork(object) {
@@ -1715,6 +1727,95 @@ Component.prototype = {
 
 Flipper.Component = Component;
 
+function ajax(url, onSuccess, onError) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url);
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            onSuccess(xhr.responseText);
+        } else {
+            onError(xhr.status);
+        }
+    };
+    xhr.send();
+}
+
+function parseStyleConent(styleContent, componentName) {
+    if (/@import/.test(styleContent)) {
+        utils.warn('do not supported @import on component sytle. ' + componentName);
+    }
+    return styleContent;
+}
+
+function collectStyleFromNode(node, baseUri, componentName) {
+    var styleText = '', linkUrls = [];
+
+    function extractStyleSheet() {
+        var linkEles = [];
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'link' &&
+                ele.getAttribute('rel') === 'stylesheet';
+        }, function(ele) {
+            linkEles.push(ele);
+        });
+
+        utils.each(linkEles, function(ele) {
+            linkUrls.push(new URL(ele.getAttribute('href'), baseUri).href);
+            node.removeChild(ele);
+        });
+    }
+
+    function extractStyleElement() {
+        var styleEles = [];
+
+        utils.eachChildNodes(node, function(ele) {
+            return ele.tagName && ele.tagName.toLowerCase() === 'style';
+        }, function(ele) {
+            styleEles.push(ele);
+        });
+
+        utils.each(styleEles, function(ele) {
+            var styleContent = ele.innerHTML;
+            styleText += styleContent;
+            node.removeChild(ele);
+        });
+    }
+
+    extractStyleElement();
+    extractStyleSheet();
+
+    return new Promise(function(resolve, reject){
+        var linksCount = linkUrls.length,
+            styleContent = styleText,
+            resolveLink, parseAndDone;
+
+        parseAndDone = function() {
+            resolve(parseStyleConent(styleContent, componentName));
+        };
+
+        if (!linksCount) {
+            parseAndDone();
+            return;
+        }
+
+        resolveLink = function(responseText) {
+            styleContent += '\n' + responseText;
+            linksCount -= 1;
+            if (linksCount === 0) {
+                parseAndDone();
+            }
+        };
+
+        utils.each(linkUrls, function(linkUrl) {
+            ajax(linkUrl, resolveLink, function(reason) {
+                reject('fetch link [' +
+                    linkUrl +
+                    '] error, caused by: ' + reason);
+            });
+        });
+    });
+}
+
 var components = {};
 
 var waitings = {};
@@ -1734,37 +1835,12 @@ function waitingComponent(name, callback) {
     }
 }
 
-function createComponent(name) {
-    var component = components[name];
-    if (!component) {
-        component = components[name] = new Flipper.Component(name);
-        component.on('initialized', function() {
-            if (!waitings[name]) {
-                return;
-            }
+/*****************************************/
 
-            utils.each(waitings[name], function(callback) {
-                callback(component);
-            });
-            waitings[name] = null;
-        });
-    }
-
-    if (component.isReady()) {
-        throw new Error('component ' + component.name + ' is already registered');
-    }
-
-    return components[name];
-}
-
-/**
- *  dom related methods
- */
-
- function tryGetBaseUri() {
+function tryGetBaseUri() {
     // TODO: polyfill if baseURI is not exists
     return document.baseURI;
- }
+}
 
 function tryGetBaseUriFromNode(node) {
     var baseURI = node.ownerDocument ? node.ownerDocument.baseURI : '';
@@ -1789,7 +1865,7 @@ function tryGetBaseUriFromCurrentScript() {
 
     /* ths script is inside <web-component> on independent html file */
     if (wrapper && wrapper.tagName &&
-            wrapper.tagName.toLowerCase() === Flipper.configs.declarationTag) {
+        wrapper.tagName.toLowerCase() === Flipper.configs.declarationTag) {
         baseURI = wrapper.baseURI;
 
     /* the script is loaded as independent js file*/
@@ -1809,80 +1885,7 @@ function tryGetNameFromCurrentScript() {
     return wrapper ? wrapper.getAttribute('name') : '';
 }
 
-/**
- * register helper
- */
-function parseFactoryArgs(name, dependencies, elementProto) {
-    /* Flipper.register( [ dep1, dep2], { ... } ); */
-    if (utils.isArray(name)) {
-        elementProto = dependencies;
-        dependencies = name;
-        name = tryGetNameFromCurrentScript();
-
-    /* Flipper.register( { ... } ); */
-    } else if (typeof name === 'object' || name === undefined) {
-        elementProto = name;
-        dependencies = undefined;
-        name = tryGetNameFromCurrentScript();
-
-    /* Flipper.register('xxx', { ... } ); */
-    } else if (typeof name === 'string' && !utils.isArray(dependencies)) {
-        elementProto = dependencies;
-        dependencies = undefined;
-    }
-    /* else Flipper.register('xxx', [ dep1, dep2 ], { ... } ); */
-
-    return {
-        name: name,
-        dependencies: dependencies,
-        elementProto: elementProto
-    };
-}
-
-function collectStyleFromNode(node) {
-    var baseURI = tryGetBaseUriFromNode(node),
-        style = '';
-
-    // TODO: Copy Attributes, such as
-    function extractStyleSheet() {
-        var linkEles = [];
-
-        utils.eachChildNodes(node, function(ele) {
-            return ele.tagName && ele.tagName.toLowerCase() === 'link' &&
-                ele.getAttribute('rel') === 'stylesheet';
-        }, function(ele) {
-            linkEles.push(ele);
-        });
-
-        utils.each(linkEles, function(ele) {
-            var href = new URL(ele.getAttribute('href'), baseURI);
-            style += '@import "' + href + '";';
-            node.removeChild(ele);
-        });
-    }
-
-    function extractStyleElement() {
-        var styleEles = [];
-
-        utils.eachChildNodes(node, function(ele) {
-            return ele.tagName && ele.tagName.toLowerCase() === 'style';
-        }, function(ele) {
-            styleEles.push(ele);
-        });
-
-        utils.each(styleEles, function(ele) {
-            var styleContent = ele.innerHTML;
-            style += styleContent;
-            node.removeChild(ele);
-        });
-    }
-
-    extractStyleSheet();
-    extractStyleElement();
-
-    return style;
-}
-
+/*****************************************/
 
 function wakeComponentUpIfTimeout(component) {
     if (component.isReady()) {
@@ -1895,7 +1898,8 @@ function wakeComponentUpIfTimeout(component) {
         }
 
         component.initialize();
-        throw new Error('component ' + component.name + ' is initialized automatically' +
+        throw new Error('component [' +
+            component.name + '] is initialized automatically' +
             ', forgot [noscript] attribute? ');
     }, 10000);
 
@@ -1904,10 +1908,31 @@ function wakeComponentUpIfTimeout(component) {
     });
 }
 
+function createComponent(name) {
+    var component = components[name];
+    if (!component) {
+        component = components[name] = new Flipper.Component(name);
+        component.on('initialized', function() {
+            if (!waitings[name]) {
+                return;
+            }
+
+            utils.each(waitings[name], function(callback) {
+                callback(component);
+            });
+            waitings[name] = null;
+        });
+    } else if (component.isReady()) {
+        throw new Error('component ' + component.name + ' is already registered');
+    }
+
+    return components[name];
+}
+
 /**
  * register a component
  */
- function registerComponent(componentArgs, isStandalone) {
+function registerComponent(componentArgs, isStandalone, error) {
     var name = componentArgs.name,
         elementProto = componentArgs.elementProto,
         dependencies = componentArgs.dependencies;
@@ -1921,14 +1946,19 @@ function wakeComponentUpIfTimeout(component) {
     var component = createComponent(name),
         definition = component.definition;
 
-
     if (!elementProto) {
-         component.markFailed(
+        component.markFailed(
             'component [' + name + '] prototype could not be inferred.');
-         return;
+        return;
     }
 
-     function markRegistrationCompleted(modules) {
+    if (error) {
+        component.markFailed(
+          'component [' + name + '] register error: ' + error);
+        return;
+    }
+
+    function markRegistrationCompleted(modules) {
         /* if the elementProto is function,
            it will be executed after dependency module loaded,
            and the returing value will be assigned as element proto */
@@ -1950,18 +1980,18 @@ function wakeComponentUpIfTimeout(component) {
         } else {
             wakeComponentUpIfTimeout(component);
         }
-     }
+    }
 
-     if (dependencies) {
-         var baseURI = tryGetBaseUriFromCurrentScript();
-         utils.each(dependencies, function(id, index) {
+    if (dependencies) {
+        var baseURI = tryGetBaseUriFromCurrentScript();
+        utils.each(dependencies, function(id, index) {
             if (id.charAt(0) === '.') {
                 id = utils.resolveUri(id, baseURI);
                 dependencies[index] = id;
             }
-         });
+        });
 
-         if (Flipper.require.check()) {
+        if (Flipper.require.check()) {
             Flipper.require(dependencies, {
                 success: function() {
                     markRegistrationCompleted(arguments);
@@ -1975,21 +2005,49 @@ function wakeComponentUpIfTimeout(component) {
                     component.markFailed(error);
                 }
             });
-         } else {
+        } else {
             component.markFailed('could not found the global module loader');
-         }
+        }
 
-     } else {
+    } else {
         markRegistrationCompleted();
-     }
- }
+    }
+}
 
- /**
-  * register from script, e.g. Flipper.register( 'xxx', ... );
-  */
+/*****************************************/
+
+/**
+ * register from script, e.g. Flipper.register( 'xxx', ... );
+ */
+function parseScriptArgs(name, dependencies, elementProto) {
+    /* Flipper.register( [ dep1, dep2], { ... } ); */
+    if (utils.isArray(name)) {
+        elementProto = dependencies;
+        dependencies = name;
+        name = tryGetNameFromCurrentScript();
+
+        /* Flipper.register( { ... } ); || Flipper.register(); */
+    } else if (typeof name === 'object' || name === undefined) {
+        elementProto = name;
+        dependencies = undefined;
+        name = tryGetNameFromCurrentScript();
+
+        /* Flipper.register('xxx', { ... } ); */
+    } else if (typeof name === 'string' && !utils.isArray(dependencies)) {
+        elementProto = dependencies;
+        dependencies = undefined;
+    }
+    /* else Flipper.register('xxx', [ dep1, dep2 ], { ... } ); */
+
+    return {
+        name: name,
+        dependencies: dependencies,
+        elementProto: elementProto
+    };
+}
+
 function registerFromFactoryScript(name, dependencies, elementProto) {
-    var componentArgs = parseFactoryArgs(name, dependencies, elementProto);
-
+    var componentArgs = parseScriptArgs(name, dependencies, elementProto);
 
     var isStandalone = true,
         wrapperEle = tryGetWrapperFromCurrentScript(),
@@ -2007,17 +2065,30 @@ function registerFromFactoryScript(name, dependencies, elementProto) {
     registerComponent(componentArgs, isStandalone);
 }
 
+/*****************************************/
+
 /**
  * register from declaration tag, e.g <web-component name="xxx">...</web-component>
  */
+
 function registerFromDeclarationTag(ele) {
+    var isStandalone = false,
+        baseUri = tryGetBaseUriFromNode(ele);
+
+    /* if the <web-component> has noscript attr,
+        then it is standalone,
+        otherwise it need to wait Flipper.register() called */
+    if (ele.hasAttribute('noscript')) {
+        isStandalone = true;
+    }
+
     var elementProto, componentArgs;
 
     elementProto = {
+        style: undefined,
         definitionEle: ele,
-        style: collectStyleFromNode(ele),
         templateEngine: ele.getAttribute('template-engine'),
-        injectionMode:  ele.getAttribute('injection-mode')
+        injectionMode: ele.getAttribute('injection-mode')
     };
 
     componentArgs = {
@@ -2026,26 +2097,31 @@ function registerFromDeclarationTag(ele) {
         elementProto: elementProto
     };
 
-    var isStandalone = false;
-
-    if (ele.hasAttribute('noscript')) {
-        isStandalone = true;
-    }
-
-    /* if the <web-component> has noscript attr,
-        then it is standalone,
-        otherwise it need to wait Flipper.register() called */
-    registerComponent(componentArgs, isStandalone);
+    Promise.all([
+        /* defined on register-resouce.js */
+        collectStyleFromNode(ele, baseUri, componentArgs.name)
+    ]).then(function(style) {
+        elementProto.style = style;
+        registerComponent(componentArgs, isStandalone);
+    }, function(error) {
+        registerComponent(componentArgs, isStandalone, error);
+    });
 }
 
 
+/*****************************************/
+
+
 /**
- * exports APIs
+ * register component by script: Flipper.register( ... )
  */
 Flipper.define = Flipper.register = registerFromFactoryScript;
 
+/**
+ * register component by tag: <web-component> ... </web-component>
+ */
 if (Flipper.useNative) {
-    document.registerElement(Flipper.configs.declarationTag /* web-component */, {
+    document.registerElement(Flipper.configs.declarationTag, {
         prototype: utils.createObject(HTMLElement.prototype, {
             createdCallback: {
                 value: function() {
@@ -2056,10 +2132,16 @@ if (Flipper.useNative) {
     });
 }
 
+/**
+ * if cached some declaration before, the flush thosem
+ */
 if (window.FlipperPolyfill) {
     window.FlipperPolyfill.flushDeclaration(Flipper.register.bind(Flipper));
 }
 
+/**
+ * other related apis
+ */
 Flipper.getComponent = function getComponent(name) {
     return components[name.toLowerCase()];
 };
@@ -2068,6 +2150,9 @@ Flipper.hasComponent = function hasComponent(name) {
     return !!Flipper.getComponent(name);
 };
 
+/**
+ * deparacted
+ */
 Flipper.getComponentHelpers = function getComponentHelpers(name) {
     var component = Flipper.getComponent(name);
 
