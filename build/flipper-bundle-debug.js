@@ -3002,20 +3002,6 @@ var insertionPointUtil = {
             return;
         }
 
-        var currNode,
-            nextNode = target.firstChild;
-        while(nextNode) {
-            currNode = nextNode;
-            nextNode = currNode.nextSibling;
-
-            if (currNode.nodeType === 1) {
-                if (currNode.tagName === 'CONTENT') {
-                    callback(currNode);
-                } else if (currNode.childNodes && currNode.childNodes.length) {
-                    lookupContentNode(currNode, callback);
-                }
-            }
-        }
         utils.eachChildNodes(target, null, function(child) {
             if (child.nodeType !== 1) {
                 return;
@@ -3911,7 +3897,7 @@ Component.prototype = {
         });
     },
     isLightDom: function() {
-        return this.injectionMode === 'light-dom' || 'ligth';
+        return (this.injectionMode === 'light-dom' || this.injectionMode === 'light');
     },
     createTree: function(element, html) {
         /* if no specific value, then get from flipper global config */
