@@ -570,7 +570,7 @@ Component.prototype = {
         });
     },
     isLightDom: function() {
-        return this.injectionMode === 'light-dom' || 'ligth';
+        return (this.injectionMode === 'light-dom' || this.injectionMode === 'light');
     },
     createTree: function(element, html) {
         /* if no specific value, then get from flipper global config */
