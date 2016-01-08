@@ -1,10 +1,4 @@
-**文档整理中，建议直接看** [example](http://gitlab.alibaba-inc.com/crm/flipper-examples)
-
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-
----
+**文檔整理中**
 
 Flipper使用說明
 ==============
